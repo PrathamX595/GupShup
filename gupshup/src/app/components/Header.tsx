@@ -10,7 +10,7 @@ export function Header() {
         <div className="bg-[#FDC62E] min-w-full h-6">  
         </div>
         <div className="flex items-center justify-between w-full h-full mt-5 px-10">
-            <img src="/fullLogo.svg" alt="logo" className="w-fit h-fit" />
+          <Link href="/"><img src="/fullLogo.svg" alt="logo" className="w-fit h-fit" /></Link>
             <div className="flex items-center gap-10">
               <Link className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-2xl hover:cursor-pointer" href="login">Log In</Link>
               <Button buttonText="Start Talking ➜" onClick={() => router.push('/chat')}/>
