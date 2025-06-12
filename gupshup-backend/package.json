@@ -1,0 +1,28 @@
+{
+  "name": "gupshup-backend",
+  "version": "1.0.0",
+  "description": "The main backend service for gupshup",
+  "main": "server.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev src/server.ts"
+  },
+  "author": "Pratham Seth",
+  "license": "",
+  "devDependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "install": "^0.13.0",
+    "npm": "^10.9.2"
+  }
+}
