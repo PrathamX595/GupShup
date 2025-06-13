@@ -26,11 +26,15 @@
     "typescript-eslint": "^8.34.0"
   },
   "dependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.19",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "install": "^0.13.0",
-    "npm": "^10.9.2"
+    "mongoose": "^8.15.2",
+    "npm": "^10.9.2",
+    "uuid": "^11.1.0"
   }
 }
