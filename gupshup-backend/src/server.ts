@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import connectDB from "./config/db";
 
 dotenv.config();
 const app = express();
@@ -13,10 +14,12 @@ app.get("/", (request: Request, response: Response) => {
   response.status(200).send("Hello World");
 });
 
-app
-  .listen(PORT, () => {
-    console.log("Server running at PORT: ", PORT);
-  })
-  .on("error", (error) => {
-    throw new Error(error.message);
-  });
+connectDB().then(() => {
+  app
+    .listen(PORT, () => {
+      console.log("Server running at PORT: ", PORT);
+    })
+    .on("error", (error) => {
+      throw new Error(error.message);
+    });
+});
