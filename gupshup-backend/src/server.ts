@@ -2,13 +2,13 @@ import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db";
-import healthCheckRouter from "../src/routes/healthCheck.route"
+import healthCheckRouter from "../src/routes/healthCheck.route";
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(Router())
+app.use(Router());
 
 const PORT = process.env.PORT || 2000;
 
