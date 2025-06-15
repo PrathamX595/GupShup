@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-// import { Strategy as MagicLinkStrategy } from "passport-magic-link";           //will need to check for typescript type deffinatinos
+// import { Strategy as MagicLinkStrategy } from "passport-magic-link";   //will need to check for typescript type deffinitions
 import { User } from "../models/User";
 import ErrorResponse from "../utils/errorResponse";
 
@@ -9,7 +9,6 @@ const passwordConfig = () => {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     throw new ErrorResponse(
       500,
-      null,
       "Google OAuth credentials not found in environment variables",
     );
   }
