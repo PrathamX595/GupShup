@@ -1,4 +1,4 @@
-class ErrorResponse extends Error {
+export class ErrorResponse extends Error {
   statusCode: number;
   data: null;
   success: boolean;
@@ -26,4 +26,4 @@ class ErrorResponse extends Error {
   }
 }
 
-export default { ErrorResponse };
+export default ErrorResponse;

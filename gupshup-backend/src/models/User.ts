@@ -11,6 +11,10 @@ interface IUser extends Document {
   createdAt: Date;
   password: string;
   refreshToken: string;
+
+  isPasswordCorrect(password: string): Promise<boolean>;
+  generateAccessToken(): string;
+  generateRefreshToken(): string;
 }
 
 const UserSchema: Schema<IUser> = new Schema({
