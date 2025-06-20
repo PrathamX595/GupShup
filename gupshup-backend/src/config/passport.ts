@@ -5,7 +5,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { User } from "../models/User";
 import ErrorResponse from "../utils/errorResponse";
 
-const passwordConfig = () => {
+const passportConfig = () => {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     throw new ErrorResponse(
       500,
@@ -82,4 +82,4 @@ const passwordConfig = () => {
   );
 };
 
-export default passwordConfig;
+export default passportConfig;
