@@ -2,8 +2,7 @@ import { Request, Response } from "express";
 import { IUser, User } from "../models/User";
 import ErrorResponse from "../utils/errorResponse";
 import { ApiResponse } from "../utils/apiResponse";
-import jwt from "jsonwebtoken";
-import passport from "passport";
+import jwt, { SignOptions } from "jsonwebtoken";
 
 const frontendurl = process.env.FRONTEND_URL;
 
@@ -216,26 +215,67 @@ const changePassword = async (req: Request, res: Response) => {
 };
 
 const googleLogin = async (req: Request, res: Response) => {
-  const user = req.user as IUser;
+  try {
+    const user = req.user as IUser;
 
-  const payload = {
+    if (!user) {
+      throw new Error("Authentication failed - no user data");
+    }
+
+    const payload = {
       _id: user._id,
       userName: user.userName,
       email: user.email,
     };
-  
+
     const secret = process.env.ACCESS_TOKEN_SECRET;
     if (!secret) {
       throw new Error("access token secret is not defined");
     }
-  
-    const options = {
+
+    const options: SignOptions = {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY as any,
     };
 
-    const token = jwt.sign(payload, secret, options)
+    const token = jwt.sign(payload, secret, options);
 
-    res.redirect(`${frontendurl}/`);
+    const cookieOptions: any = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    };
+
+    return res
+      .cookie("accessToken", token, cookieOptions)
+      .redirect(process.env.FRONTEND_URL || "http://localhost:3000");
+  } catch (error) {
+    console.error("Google login error:", error);
+    return res.redirect(
+      `${frontendurl || "http://localhost:3000"}/login?error=authentication_failed`
+    );
+  }
+};
+
+const verifyUser = async (req: Request, res: Response) => {
+  const token = req.cookies.accessToken;
+
+  if (!token) {
+    return res.status(401).json({ authenticated: false });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET as string
+    );
+    return res.status(200).json({
+      authenticated: true,
+      user: decoded,
+    });
+  } catch (error) {
+    return res.status(401).json({ authenticated: false });
+  }
 };
 
 export {
@@ -246,5 +286,6 @@ export {
   getCurrentUser,
   updateDetails,
   changePassword,
-  googleLogin
+  googleLogin,
+  verifyUser
 };

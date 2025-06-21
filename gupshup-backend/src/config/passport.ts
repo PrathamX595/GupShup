@@ -14,7 +14,7 @@ const passportConfig = () => {
   }
 
   passport.serializeUser((user: any, done) => {
-    done(null, user.id);
+    done(null, user._id);
   });
 
   passport.deserializeUser(async (id: string, done) => {
@@ -55,7 +55,7 @@ const passportConfig = () => {
       {
         clientID: process.env.GOOGLE_CLIENT_ID || "",
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-        callbackURL: "/api/auth/google/callback",
+        callbackURL: "http://localhost:5000/api/auth/google/callback",
         scope: ["profile", "email"],
       },
       async (accessToken, refreshToken, profile, done) => {
