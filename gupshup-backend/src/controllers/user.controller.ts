@@ -258,22 +258,35 @@ const googleLogin = async (req: Request, res: Response) => {
 };
 
 const verifyUser = async (req: Request, res: Response) => {
-  const token = req.cookies.accessToken;
-
-  if (!token) {
-    return res.status(401).json({ authenticated: false });
-  }
-
   try {
+    const token = req.cookies.accessToken;
+
+    if (!token) {
+      return res.status(401).json({ authenticated: false });
+    }
+    interface DecodedToken extends jwt.JwtPayload {
+      _id: string;
+      userName: string;
+      email: string;
+      avatar?: string;
+    }
     const decoded = jwt.verify(
-      token,
+      token, 
       process.env.ACCESS_TOKEN_SECRET as string
-    );
+    ) as DecodedToken;
+    
+    const user = await User.findById(decoded._id).select("-password -refreshToken");
+    
+    if (!user) {
+      return res.status(401).json({ authenticated: false });
+    }
+
     return res.status(200).json({
       authenticated: true,
-      user: decoded,
+      user: user,
     });
   } catch (error) {
+    console.error("Auth verification error:", error);
     return res.status(401).json({ authenticated: false });
   }
 };

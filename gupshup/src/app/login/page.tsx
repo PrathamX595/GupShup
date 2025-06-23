@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "../components/Button";
+import { authService } from "../services/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -62,7 +63,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center w-full">
             <Button buttonText="Sign In" className="w-full"/>
             <div className="text-center text-xl my-4">or</div>
-            <Button buttonText="Login with Google" imgSrc="/googleLogo.svg" className="bg-white hover:bg-amber-50 w-full"/>
+            <Button buttonText="Login with Google" onClick={authService.googleLogin} imgSrc="/googleLogo.svg" className="bg-white hover:bg-amber-50 w-full"/>
           </div>          
           <div className="text-center text-xl mt-6 font-[family-name:var(--font-kiwi-medium)]">
             Don't have an account? <Link href="/register" className="text-[#FDC62E] hover:text-[#FCBC0D] underline">Register</Link>
