@@ -7,31 +7,39 @@ const useAuth = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
       try {
         const response = await authService.verifyAuth();
 
-        if (response.status === 200) {
-          const data = await response.data;
+        if (isMounted) {
           setIsAuthenticated(true);
-          setUser(data.user);
-        } else {
+          setUser(response.data.user);
+        }
+      } catch (error: any) {
+        // This is an expected error for unauthenticated users
+        console.log("User not authenticated yet");
+
+        if (isMounted) {
           setIsAuthenticated(false);
           setUser(null);
         }
-      } catch (error) {
-        setIsAuthenticated(false);
-        setUser(null);
-        throw error;
-      } finally{
-        setIsLoading(false);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    checkAuth()
+    checkAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  return {isAuthenticated, user, isLoading}
+  return { isAuthenticated, user, isLoading };
 };
 
 export default useAuth;

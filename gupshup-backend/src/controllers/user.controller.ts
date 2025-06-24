@@ -136,6 +136,60 @@ const login = async (req: Request, res: Response) => {
     );
 };
 
+const registerUser = async (req: Request, res: Response) => {
+  try {
+    const { userName, email, password } = req.body;
+    if (!email || !userName || !password) {
+      throw new ErrorResponse(400, "Missing fields");
+    }
+    let user = await User.findOne({ email: email });
+
+    if (user) {
+      return res
+        .status(409)
+        .json(
+          new ApiResponse(409, null, "User with this email already exists")
+        );
+    }
+
+    user = await User.create({
+      userName: userName,
+      email: email,
+      password: password,
+    });
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
+
+    const createdUser = await User.findById(user._id).select(
+      "-password -refreshToken"
+    );
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    };
+
+    return res
+      .status(201)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          201,
+          { user: createdUser, accessToken, refreshToken },
+          "User registered successfully"
+        )
+      );
+  } catch (error) {
+    throw new ErrorResponse(
+      400,
+      `something went wrong while registering user: ${error}`
+    );
+  }
+};
+
 const logout = async (req: Request, res: Response) => {
   await User.findByIdAndUpdate(
     (req.user as IUser)?._id,
@@ -259,10 +313,12 @@ const googleLogin = async (req: Request, res: Response) => {
 
 const verifyUser = async (req: Request, res: Response) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies?.accessToken;
 
     if (!token) {
-      return res.status(401).json({ authenticated: false });
+      return res
+        .status(401)
+        .json({ authenticated: false, message: "No access token found" });
     }
     interface DecodedToken extends jwt.JwtPayload {
       _id: string;
@@ -271,12 +327,14 @@ const verifyUser = async (req: Request, res: Response) => {
       avatar?: string;
     }
     const decoded = jwt.verify(
-      token, 
+      token,
       process.env.ACCESS_TOKEN_SECRET as string
     ) as DecodedToken;
-    
-    const user = await User.findById(decoded._id).select("-password -refreshToken");
-    
+
+    const user = await User.findById(decoded._id).select(
+      "-password -refreshToken"
+    );
+
     if (!user) {
       return res.status(401).json({ authenticated: false });
     }
@@ -300,5 +358,6 @@ export {
   updateDetails,
   changePassword,
   googleLogin,
-  verifyUser
+  registerUser,
+  verifyUser,
 };

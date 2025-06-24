@@ -28,7 +28,7 @@ export default function Chat() {
             <div className="flex items-center gap-10">
               {user ? (
                 <div className="w-10 h-10 rounded-full overflow-hidden">
-                  {
+                  {user.avatar ? (
                     <Image
                       src={user.avatar}
                       alt="Profile"
@@ -36,7 +36,11 @@ export default function Chat() {
                       height={40}
                       className="object-cover"
                     />
-                  }
+                  ) : (
+                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+                      {user.userName?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link
