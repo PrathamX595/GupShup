@@ -38,10 +38,20 @@ const authService = {
       });
       return res;
     } catch (error) {
-      console.error("Registration error:", error);
       throw error;
     }
   },
+  login: async(email: string, password: string)=>{
+    try {
+      const res = await api.post(`/api/auth/login`, {
+        email,
+        password
+      })
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  }
 };
 
 export { authService };

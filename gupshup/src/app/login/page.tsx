@@ -1,17 +1,30 @@
 'use client'
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../components/Button";
 import { authService } from "../services/api";
+import useAuth from "../hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const {user} = useAuth();
+  const router = useRouter();
+
+  useEffect(()=>{
+    if(user){
+      router.back();
+      router.refresh();
+    }
+  })
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt with:", email, password);
+    const res = await authService.login(email, password);
+    router.back();
+    router.refresh();
   };
 
   return (
@@ -63,7 +76,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center w-full">
             <Button buttonText="Sign In" className="w-full"/>
             <div className="text-center text-xl my-4">or</div>
-            <Button buttonText="Login with Google" onClick={authService.googleLogin} imgSrc="/googleLogo.svg" className="bg-white hover:bg-amber-50 w-full"/>
+            <Button type="button" buttonText="Login with Google" onClick={authService.googleLogin} imgSrc="/googleLogo.svg" className="bg-white hover:bg-amber-50 w-full"/>
           </div>          
           <div className="text-center text-xl mt-6 font-[family-name:var(--font-kiwi-medium)]">
             Don't have an account? <Link href="/register" className="text-[#FDC62E] hover:text-[#FCBC0D] underline">Register</Link>

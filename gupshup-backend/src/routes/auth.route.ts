@@ -1,6 +1,6 @@
 import { Router } from "express";
 import passport from "passport";
-import { googleLogin, logout, registerUser, verifyUser } from "../controllers/user.controller";
+import { googleLogin, login, logout, registerUser, verifyUser } from "../controllers/user.controller";
 
 const router = Router();
 
@@ -21,6 +21,10 @@ router.route("/register").post((req, res, next)=>{
 
 router.route("/logout").get((req, res, next)=>{
   logout(req, res).catch(next);
+})
+
+router.route("/login").post((req, res, next)=>{
+  login(req, res).catch(next);
 })
 
 router.route("/verify").get((req, res, next) => {

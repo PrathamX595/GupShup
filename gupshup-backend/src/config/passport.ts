@@ -9,7 +9,7 @@ const passportConfig = () => {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     throw new ErrorResponse(
       500,
-      "Google OAuth credentials not found in environment variables",
+      "Google OAuth credentials not found in environment variables"
     );
   }
 
@@ -46,8 +46,8 @@ const passportConfig = () => {
         } catch (error) {
           return done(error);
         }
-      },
-    ),
+      }
+    )
   );
 
   passport.use(
@@ -73,12 +73,18 @@ const passportConfig = () => {
             avatar: profile.photos?.[0].value,
           });
 
+          const accessToken = user.generateAccessToken();
+          const refreshToken = user.generateRefreshToken();
+          user.refreshToken = refreshToken;
+
+          await user.save({ validateBeforeSave: false });
+
           return done(null, user);
         } catch (error) {
           return done(error);
         }
-      },
-    ),
+      }
+    )
   );
 };
 

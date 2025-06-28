@@ -87,13 +87,13 @@ const refreshAccessToken = async (req: Request, res: Response) => {
 };
 
 const login = async (req: Request, res: Response) => {
-  const { email, userName, password } = req.body;
-  if (!email || !userName || !password) {
+  const { email, password } = req.body;
+  if (!email || !password) {
     throw new ErrorResponse(400, "Missing fields");
   }
 
   const user = await User.findOne({
-    $or: [{ userName }, { email }],
+    $or: [{ email }],
   });
 
   if (!user) {
@@ -276,12 +276,6 @@ const googleLogin = async (req: Request, res: Response) => {
       throw new Error("Authentication failed - no user data");
     }
 
-    const payload = {
-      _id: user._id,
-      userName: user.userName,
-      email: user.email,
-    };
-
     const secret = process.env.ACCESS_TOKEN_SECRET;
     if (!secret) {
       throw new Error("access token secret is not defined");
@@ -291,7 +285,9 @@ const googleLogin = async (req: Request, res: Response) => {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY as any,
     };
 
-    const token = jwt.sign(payload, secret, options);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
 
     const cookieOptions: any = {
       httpOnly: true,
@@ -301,10 +297,10 @@ const googleLogin = async (req: Request, res: Response) => {
     };
 
     return res
-      .cookie("accessToken", token, cookieOptions)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", refreshToken, cookieOptions)
       .redirect(process.env.FRONTEND_URL || "http://localhost:3000");
   } catch (error) {
-    console.error("Google login error:", error);
     return res.redirect(
       `${frontendurl || "http://localhost:3000"}/login?error=authentication_failed`
     );

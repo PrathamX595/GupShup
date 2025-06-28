@@ -1,21 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../components/Button";
 import { authService } from "../services/api";
 import { useRouter } from "next/navigation";
+import useAuth from "../hooks/useAuth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const router = useRouter();
+  const {user} = useAuth();
+
+  useEffect(()=>{
+    if(user){
+      router.back();
+      router.refresh();
+    }
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const response = await authService.register(username, email, password);
-    router.push("/");
+    router.back();
     router.refresh();
   };
 

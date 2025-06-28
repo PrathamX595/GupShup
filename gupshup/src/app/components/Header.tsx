@@ -4,21 +4,27 @@ import { useRouter } from "next/navigation";
 import { Button } from "./Button";
 import useAuth from "../hooks/useAuth";
 import Image from "next/image";
+import { authService } from "../services/api";
 
 export function Header() {
   var router = useRouter();
-  const { user } = useAuth();
+  let { user } = useAuth();
+
+  const handelLogout = () => {
+    authService.logout();
+    window.location.reload();
+  };
 
   return (
     <div className="flex flex-col items-center w-screen item">
       <div className="bg-[#FDC62E] min-w-full h-6"></div>
       <div className="flex items-center justify-between w-full h-full mt-5 px-10">
         <Link href="/">
-          <img src="/fullLogo.svg" alt="logo" className="w-fit h-fit" />
+          <img src="/fullLogo.svg" alt="logo" className="w-fit h-fit"/>
         </Link>
         <div className="flex items-center gap-10">
           {user ? (
-            <div className="w-10 h-10 rounded-full overflow-hidden">
+            <div className="w-10 h-10 rounded-full overflow-hidden" onClick={handelLogout}>
               {user.avatar ? (
                 <Image
                   src={user.avatar}
