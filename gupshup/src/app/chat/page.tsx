@@ -5,10 +5,21 @@ import { Button } from "../components/Button";
 import { useRouter } from "next/navigation";
 import useAuth from "../hooks/useAuth";
 import Image from "next/image";
+import { socket } from "../services/socket";
+import { useEffect } from "react";
 
 export default function Chat() {
   const router = useRouter();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (!socket.connected) socket.connect();
+
+    return () => {
+      socket.off("connect");
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div className="text-black font-[family-name:var(--font-kiwi-regular)] flex flex-col">

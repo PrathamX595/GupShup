@@ -8,9 +8,23 @@ import passport from "passport";
 import passportConfig from "./config/passport";
 import session from "express-session";
 import cookieParser from "cookie-parser";
+import { createServer } from "node:http";
+import { Server } from "socket.io";
 
 dotenv.config();
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket)=>{
+  console.log("new user connected", socket.id);
+})
+
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
@@ -48,7 +62,7 @@ app.use("/api/healthCheck", healthCheckRouter);
 app.use("/api/auth", authRouter);
 
 connectDB().then(() => {
-  app
+  server
     .listen(PORT, () => {
       console.log("Server running at PORT: ", PORT);
     })

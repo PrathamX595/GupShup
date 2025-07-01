@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { IUser, User } from "../models/User";
 import ErrorResponse from "../utils/errorResponse";
 import { ApiResponse } from "../utils/apiResponse";
-import jwt, { SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 const frontendurl = process.env.FRONTEND_URL;
 
@@ -280,10 +280,6 @@ const googleLogin = async (req: Request, res: Response) => {
     if (!secret) {
       throw new Error("access token secret is not defined");
     }
-
-    const options: SignOptions = {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY as any,
-    };
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
       user._id
