@@ -18,21 +18,33 @@ export default function Chat() {
   const router = useRouter();
   const { user } = useAuth();
   const [selfMessage, setSelfMessage] = useState<string>("");
-  const [frndMessage, setFrndMessage] = useState<string>("");
   const [messages, setMessages] = useState<Imessages[]>([]);
   const handleChatBtn = () => {
     const msg: Imessages = {
-      message: selfMessage,
+      message: selfMessage.trim(),
       type: "self",
     };
-    setMessages((prev) => [...prev, msg]);
+    if (msg.message != "") {
+      setMessages((prev) => [...prev, msg]);
+      socket.emit("getMessage", { message: msg.message });
+    }
     setSelfMessage("");
   };
 
   useEffect(() => {
     if (!socket.connected) socket.connect();
+    const handleSendMessage = (arg: any) => {
+      const msg: Imessages = {
+        message: arg.message,
+        type: "friend",
+      };
+      setMessages((prev) => [...prev, msg]);
+    };
+
+    socket.on("sendMessage", handleSendMessage);
 
     return () => {
+      socket.off("sendMessage", handleSendMessage);
       socket.off("connect");
       socket.disconnect();
     };
@@ -99,7 +111,12 @@ export default function Chat() {
               <MessageBox data={messages} />
             </div>
             <div className="mb-4">
-              <form className="relative flex items-center" onSubmit={(e)=>{e.preventDefault();}}>
+              <form
+                className="relative flex items-center"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                }}
+              >
                 <input
                   type="text"
                   placeholder="Type a message"

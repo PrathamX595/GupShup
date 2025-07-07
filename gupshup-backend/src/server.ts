@@ -21,9 +21,12 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket)=>{
+io.on("connection", (socket) => {
   console.log("new user connected", socket.id);
-})
+  socket.on("getMessage", (arg) => {
+    socket.emit("sendMessage", { message: arg.message });
+  });
+});
 
 app.use(
   cors({

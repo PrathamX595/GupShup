@@ -1,9 +1,23 @@
 import { useState, useEffect } from "react";
 import { authService } from "../services/api";
 
+interface IUser extends Document {
+  _id: string;
+  userName: string;
+  email: string;
+  avatar: string;
+  createdAt: Date;
+  password: string;
+  refreshToken: string;
+
+  isPasswordCorrect(password: string): Promise<boolean>;
+  generateAccessToken(): string;
+  generateRefreshToken(): string;
+}
+
 const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<IUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
