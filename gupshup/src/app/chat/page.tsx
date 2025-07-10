@@ -33,6 +33,22 @@ export default function Chat() {
 
   useEffect(() => {
     if (!socket.connected) socket.connect();
+
+    socket.emit("findRoom", { userId: user?._id || "anonymous" });
+
+    socket.on("roomAssigned", (data) => {
+      console.log("Assigned to room:", data.roomId);
+      console.log("Room status:", data.status);
+    });
+
+    socket.on("userJoined", (data) => {
+      console.log("User joined room:", data.userId);
+    });
+
+    socket.on("userLeft", (data) => {
+      console.log("User left room:", data.userId);
+    });
+
     const handleSendMessage = (arg: any) => {
       const msg: Imessages = {
         message: arg.message,
@@ -45,10 +61,12 @@ export default function Chat() {
 
     return () => {
       socket.off("sendMessage", handleSendMessage);
-      socket.off("connect");
+      socket.off("roomAssigned");
+      socket.off("userJoined");
+      socket.off("userLeft");
       socket.disconnect();
     };
-  }, []);
+  }, [user]);
 
   return (
     <div className="text-black font-[family-name:var(--font-kiwi-regular)] flex flex-col">
