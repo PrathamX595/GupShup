@@ -10,6 +10,12 @@ import session from "express-session";
 import cookieParser from "cookie-parser";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
+import {
+  redis,
+  findOrCreateRoom,
+  getRoomInfo,
+  leaveRoom,
+} from "./config/redis";
 
 dotenv.config();
 const app = express();
@@ -23,8 +29,47 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
   console.log("new user connected", socket.id);
+  let currentRoomId: string | null = null;
+
+  socket.on("findRoom", async (data) => {
+    try {
+      const { userId } = data;
+      currentRoomId = await findOrCreateRoom();
+
+      socket.join(currentRoomId);
+
+      const roomInfo = await getRoomInfo(currentRoomId);
+
+      socket.emit("roomAssigned", {
+        roomId: currentRoomId,
+        members: roomInfo.members,
+        status: roomInfo.status,
+      });
+
+      socket.to(currentRoomId).emit("userJoined", {
+        userId,
+        roomId: currentRoomId,
+      });
+    } catch (error) {
+      console.error("Error finding room:", error);
+      socket.emit("error", { message: "Failed to find room" });
+    }
+  });
+
   socket.on("getMessage", (arg) => {
-    socket.emit("sendMessage", { message: arg.message });
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("sendMessage", {
+        message: arg.message,
+      });
+    }
+  });
+
+  socket.on("disconnect", async () => {
+    console.log("User disconnected:", socket.id);
+    if (currentRoomId) {
+      await leaveRoom(currentRoomId);
+      socket.to(currentRoomId).emit("userLeft", { userId: socket.id });
+    }
   });
 });
 
@@ -63,6 +108,8 @@ app.get("/", (request: Request, response: Response) => {
 
 app.use("/api/healthCheck", healthCheckRouter);
 app.use("/api/auth", authRouter);
+
+redis.connect().catch(console.error);
 
 connectDB().then(() => {
   server
