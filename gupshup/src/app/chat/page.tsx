@@ -19,6 +19,8 @@ export default function Chat() {
   const { user } = useAuth();
   const [selfMessage, setSelfMessage] = useState<string>("");
   const [messages, setMessages] = useState<Imessages[]>([]);
+  const [roomStatus, setRoomStatus] = useState<string>("searching");
+
   const handleChatBtn = () => {
     const msg: Imessages = {
       message: selfMessage.trim(),
@@ -31,24 +33,47 @@ export default function Chat() {
     setSelfMessage("");
   };
 
+  const handleNextRoom = () => {
+    setMessages([]);
+    setRoomStatus("searching");
+    socket.emit("leaveRoom");
+  };
+
   useEffect(() => {
     if (!socket.connected) socket.connect();
 
+    // Initial room search
     socket.emit("findRoom", { userId: user?._id || "anonymous" });
 
+    // Listen for room assignment
     socket.on("roomAssigned", (data) => {
       console.log("Assigned to room:", data.roomId);
+      console.log("members:", data.members);
       console.log("Room status:", data.status);
+      setRoomStatus(data.status);
     });
 
+    // Listen for user joined
     socket.on("userJoined", (data) => {
+      setMessages([]); // Clear previous messages
+      setRoomStatus("active");
       console.log("User joined room:", data.userId);
     });
 
+    // Listen for user left
     socket.on("userLeft", (data) => {
       console.log("User left room:", data.userId);
+      setRoomStatus("searching");
     });
 
+    // Listen for instruction to find new room
+    socket.on("findNewRoom", () => {
+      setMessages([]);
+      setRoomStatus("searching");
+      socket.emit("searchNewRoom");
+    });
+
+    // Listen for messages
     const handleSendMessage = (arg: any) => {
       const msg: Imessages = {
         message: arg.message,
@@ -64,6 +89,7 @@ export default function Chat() {
       socket.off("roomAssigned");
       socket.off("userJoined");
       socket.off("userLeft");
+      socket.off("findNewRoom");
       socket.disconnect();
     };
   }, [user]);
@@ -111,7 +137,7 @@ export default function Chat() {
               <Button
                 buttonText="Next room [spacebar] ➜"
                 className="h-10"
-                onClick={() => router.push("/chat")}
+                onClick={handleNextRoom}
               />
             </div>
           </div>

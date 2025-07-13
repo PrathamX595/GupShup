@@ -27,15 +27,20 @@ const io = new Server(server, {
   },
 });
 
+const userSockets = new Map();
+
 io.on("connection", (socket) => {
   console.log("new user connected", socket.id);
   let currentRoomId: string | null = null;
+  let currentUserId: string | null = null;
 
   socket.on("findRoom", async (data) => {
     try {
       const { userId } = data;
-      currentRoomId = await findOrCreateRoom();
+      currentUserId = userId;
+      userSockets.set(socket.id, { userId, socketId: socket.id });
 
+      currentRoomId = await findOrCreateRoom(userId);
       socket.join(currentRoomId);
 
       const roomInfo = await getRoomInfo(currentRoomId);
@@ -46,10 +51,12 @@ io.on("connection", (socket) => {
         status: roomInfo.status,
       });
 
-      socket.to(currentRoomId).emit("userJoined", {
-        userId,
-        roomId: currentRoomId,
-      });
+      if (roomInfo.members === "2") {
+        socket.to(currentRoomId).emit("userJoined", {
+          userId,
+          roomId: currentRoomId,
+        });
+      }
     } catch (error) {
       console.error("Error finding room:", error);
       socket.emit("error", { message: "Failed to find room" });
@@ -64,13 +71,94 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", async () => {
-    console.log("User disconnected:", socket.id);
-    if (currentRoomId) {
-      await leaveRoom(currentRoomId);
-      socket.to(currentRoomId).emit("userLeft", { userId: socket.id });
+socket.on("leaveRoom", async () => {
+  if (currentRoomId && currentUserId) {
+    try {
+      const otherUserId = await leaveRoom(currentRoomId, currentUserId);
+      
+      socket.to(currentRoomId).emit("userLeft", { 
+        userId: currentUserId,
+        message: "User left the room - room deleted" 
+      });
+
+      if (otherUserId) {
+        socket.to(currentRoomId).emit("findNewRoom");
+      }
+
+      socket.leave(currentRoomId);
+
+      currentRoomId = await findOrCreateRoom(currentUserId);
+      socket.join(currentRoomId);
+
+      const roomInfo = await getRoomInfo(currentRoomId);
+      socket.emit("roomAssigned", {
+        roomId: currentRoomId,
+        members: roomInfo.members,
+        status: roomInfo.status,
+      });
+
+      console.log(`User ${currentUserId} moved to new room ${currentRoomId}`);
+    } catch (error) {
+      console.error("Error leaving room:", error);
     }
-  });
+  }
+});
+
+socket.on("searchNewRoom", async () => {
+  if (currentUserId) {
+    try {
+      if (currentRoomId) {
+        socket.leave(currentRoomId);
+      }
+
+      currentRoomId = await findOrCreateRoom(currentUserId);
+      socket.join(currentRoomId);
+
+      const roomInfo = await getRoomInfo(currentRoomId);
+      socket.emit("roomAssigned", {
+        roomId: currentRoomId,
+        members: roomInfo.members,
+        status: roomInfo.status,
+      });
+
+      if (roomInfo.members === "2") {
+        socket.to(currentRoomId).emit("userJoined", {
+          userId: currentUserId,
+          roomId: currentRoomId,
+        });
+      }
+
+      console.log(`User ${currentUserId} found new room ${currentRoomId}`);
+    } catch (error) {
+      console.error("Error searching new room:", error);
+    }
+  }
+});
+
+socket.on("disconnect", async () => {
+  console.log("User disconnected:", socket.id);
+  
+  if (currentRoomId && currentUserId) {
+    try {
+      const otherUserId = await leaveRoom(currentRoomId, currentUserId);
+
+      socket.to(currentRoomId).emit("userLeft", { 
+        userId: currentUserId,
+        message: "User disconnected - room deleted" 
+      });
+
+      if (otherUserId) {
+        socket.to(currentRoomId).emit("findNewRoom");
+      }
+
+      socket.leave(currentRoomId);
+    } catch (error) {
+      console.error("Error handling disconnect:", error);
+    }
+  }
+
+  userSockets.delete(socket.id);
+});
 });
 
 app.use(
