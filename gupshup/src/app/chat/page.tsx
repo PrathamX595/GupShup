@@ -8,6 +8,7 @@ import Image from "next/image";
 import { socket } from "../services/socket";
 import { useEffect, useState } from "react";
 import MessageBox from "../components/MessageBox";
+import EmojiPicker from "emoji-picker-react";
 
 interface Imessages {
   message: string;
@@ -20,6 +21,7 @@ export default function Chat() {
   const [selfMessage, setSelfMessage] = useState<string>("");
   const [messages, setMessages] = useState<Imessages[]>([]);
   const [roomStatus, setRoomStatus] = useState<string>("searching");
+  const [isEmojiOpen, setIsEmojiOpen] = useState<boolean>(false);
 
   const handleChatBtn = () => {
     const msg: Imessages = {
@@ -42,10 +44,8 @@ export default function Chat() {
   useEffect(() => {
     if (!socket.connected) socket.connect();
 
-    // Initial room search
     socket.emit("findRoom", { userId: user?._id || "anonymous" });
 
-    // Listen for room assignment
     socket.on("roomAssigned", (data) => {
       console.log("Assigned to room:", data.roomId);
       console.log("members:", data.members);
@@ -53,27 +53,23 @@ export default function Chat() {
       setRoomStatus(data.status);
     });
 
-    // Listen for user joined
     socket.on("userJoined", (data) => {
-      setMessages([]); // Clear previous messages
+      setMessages([]);
       setRoomStatus("active");
       console.log("User joined room:", data.userId);
     });
 
-    // Listen for user left
     socket.on("userLeft", (data) => {
       console.log("User left room:", data.userId);
       setRoomStatus("searching");
     });
 
-    // Listen for instruction to find new room
     socket.on("findNewRoom", () => {
       setMessages([]);
       setRoomStatus("searching");
       socket.emit("searchNewRoom");
     });
 
-    // Listen for messages
     const handleSendMessage = (arg: any) => {
       const msg: Imessages = {
         message: arg.message,
@@ -161,15 +157,36 @@ export default function Chat() {
                   e.preventDefault();
                 }}
               >
+                <button
+                  type="button"
+                  className="right-12 px-4 py-3 rounded-tl-2xl rounded-bl-2xl bg-[#F2F2F2] hover:bg-[#e5e5e5]"
+                  onClick={() => setIsEmojiOpen(!isEmojiOpen)}
+                  suppressHydrationWarning={true}
+                >
+                  😊
+                </button>
+                {isEmojiOpen && (
+                  <div className="absolute bottom-16 right-0 z-50">
+                  <EmojiPicker
+                    skinTonesDisabled={true}
+                    onEmojiClick={(emojiData) => {
+                    setSelfMessage(prev => prev + emojiData.emoji);
+                    setIsEmojiOpen(false);
+                    }}
+                  />
+                  </div>
+                )}
+                
                 <input
                   type="text"
                   placeholder="Type a message"
-                  className="w-full px-4 py-3 bg-[#F2F2F2] placeholder:text-[#898989] placeholder:text-sm rounded-xl border-none focus:outline-none focus:ring-0 pr-12"
+                  className="w-full px-1 py-3 bg-[#F2F2F2] placeholder:text-[#898989] placeholder:text-sm rounded-br-2xl rounded-tr-2xl border-none focus:outline-none focus:ring-0 pr-20"
                   value={selfMessage}
                   onChange={(e) => {
                     setSelfMessage(e.target.value);
                   }}
                 />
+
                 <button
                   type="submit"
                   className="absolute right-2 p-2 rounded-xl hover:bg-[#e5e5e5]"
