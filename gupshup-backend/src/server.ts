@@ -16,7 +16,6 @@ import {
   getRoomInfo,
   leaveRoom,
 } from "./config/redis";
-import { off } from "node:process";
 
 dotenv.config();
 const app = express();
@@ -64,24 +63,16 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("connect-call", async (data) => {
-    const { userId } = data;
-    const peer = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: [
-            "stun:stun.l.google.com:19302",
-            "stun:global.stun.twilio.com:3478",
-          ],
-        },
-      ],
-    });
-
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
+  socket.on("call-req", async (data) => {
+    const { socketId, offer } = data;
     if (currentRoomId) {
-      socket.to(currentRoomId).emit("connection-req", { userId, offer });
+      socket.to(currentRoomId).emit("got-req", { socketId, offer });
     }
+  });
+
+  socket.on("call-accepted", (data) => {
+    const { socketId, answer } = data;
+    socket.to(socketId).emit("call-accepted", { answer });
   });
 
   socket.on("getMessage", (arg) => {

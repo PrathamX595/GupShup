@@ -9,6 +9,7 @@ import { socket } from "../services/socket";
 import { useEffect, useState } from "react";
 import MessageBox from "../components/MessageBox";
 import EmojiPicker from "emoji-picker-react";
+import Stream from "stream";
 
 interface Imessages {
   message: string;
@@ -22,6 +23,43 @@ export default function Chat() {
   const [messages, setMessages] = useState<Imessages[]>([]);
   const [roomStatus, setRoomStatus] = useState<string>("searching");
   const [isEmojiOpen, setIsEmojiOpen] = useState<boolean>(false);
+  const [peer, setPeer] = useState<RTCPeerConnection>();
+  const [stream, setStream] = useState<MediaStream>();
+  const [incomingStream, setIncomingStream] = useState<MediaStream>();
+
+  const sendCallReq = async () => {
+    const newPeer = new RTCPeerConnection({
+      iceServers: [
+        {
+          urls: [
+            "stun:stun.l.google.com:19302",
+            "stun:global.stun.twilio.com:3478",
+          ],
+        },
+      ],
+    });
+
+    setPeer(newPeer);
+
+    const offer = await newPeer.createOffer();
+    await newPeer.setLocalDescription(offer);
+    return offer;
+  };
+
+  const sendStream = (stream: MediaStream) => {
+  if (!peer) return;
+  
+  const tracks = stream.getTracks();
+  const senders = peer.getSenders();
+  
+  for (const track of tracks) {
+    const existingSender = senders.find(sender => sender.track === track);
+    
+    if (!existingSender) {
+      peer.addTrack(track, stream);
+    }
+  }
+};
 
   const handleChatBtn = () => {
     const msg: Imessages = {
@@ -42,16 +80,46 @@ export default function Chat() {
     socket.emit("leaveRoom");
   };
 
+  const getUserMedia = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+    setStream(stream);
+  };
+
+  const handleIncomingStreams = (e: any) => {
+    const streams = e.streams;
+    setIncomingStream(streams[0]);
+  };
+
   useEffect(() => {
     if (!socket.connected) socket.connect();
 
     socket.emit("findRoom", { userId: socket.id });
 
-    socket.on("roomAssigned", (data) => {
+    socket.on("roomAssigned", async (data) => {
       console.log("Assigned to room:", data.roomId);
       console.log("members:", data.members);
       console.log("Room status:", data.status);
       setRoomStatus(data.status);
+      const offer = await sendCallReq();
+      const socketId = socket.id;
+      socket.emit("call-req", { socketId, offer });
+    });
+
+    socket.on("got-req", async (data) => {
+      const { socketId, offer } = data;
+      await peer?.setRemoteDescription(offer);
+      const answer = await peer?.createAnswer(offer);
+      await peer?.setLocalDescription(answer);
+      socket.emit("call-accepted", { socketId, answer });
+    });
+
+    socket.on("call-accepted", async (data) => {
+      const { answer } = data;
+      await peer?.setRemoteDescription(answer);
+      console.log("call accepted", answer);
     });
 
     socket.on("userJoined", (data) => {
@@ -81,15 +149,24 @@ export default function Chat() {
 
     socket.on("sendMessage", handleSendMessage);
 
+    peer?.addEventListener("track", handleIncomingStreams);
+
     return () => {
       socket.off("sendMessage", handleSendMessage);
       socket.off("roomAssigned");
       socket.off("userJoined");
       socket.off("userLeft");
       socket.off("findNewRoom");
+      socket.off("got-req");
+      socket.off("call-accepted");
+      peer?.removeEventListener("track", handleIncomingStreams);
       socket.disconnect();
     };
   }, [user]);
+
+  useEffect(() => {
+    getUserMedia();
+  }, [getUserMedia]);
 
   return (
     <div className="text-black font-[family-name:var(--font-kiwi-regular)] flex flex-col">
@@ -107,8 +184,47 @@ export default function Chat() {
               </div>
             </div>
             <div className="w-full h-full mx-5 pb-5">
-              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2"></div>
-              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2"></div>
+              <div
+                className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2"
+              >
+                {stream && (
+                  <video
+                    ref={(video) => {
+                      if (video) video.srcObject = stream;
+                    }}
+                    autoPlay
+                    muted={true}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "0.375rem",
+                      aspectRatio: "16/9",
+                    }}
+                  />
+                )}
+              </div>
+              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2" onClick={() => {
+                  if (stream) {
+                    sendStream(stream);
+                  }
+                }}>
+                {incomingStream && (
+                  <video
+                    ref={(video) => {
+                      if (video) video.srcObject = incomingStream;
+                    }}
+                    autoPlay
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "0.375rem",
+                      aspectRatio: "16/9",
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
           <div className="flex flex-col w-1/3 h-full border-l border-black">
