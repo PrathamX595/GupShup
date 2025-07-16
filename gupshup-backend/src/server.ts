@@ -16,6 +16,7 @@ import {
   getRoomInfo,
   leaveRoom,
 } from "./config/redis";
+import { off } from "node:process";
 
 dotenv.config();
 const app = express();
@@ -63,6 +64,26 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("connect-call", async (data) => {
+    const { userId } = data;
+    const peer = new RTCPeerConnection({
+      iceServers: [
+        {
+          urls: [
+            "stun:stun.l.google.com:19302",
+            "stun:global.stun.twilio.com:3478",
+          ],
+        },
+      ],
+    });
+
+    const offer = await peer.createOffer();
+    await peer.setLocalDescription(offer);
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("connection-req", { userId, offer });
+    }
+  });
+
   socket.on("getMessage", (arg) => {
     if (currentRoomId) {
       socket.to(currentRoomId).emit("sendMessage", {
@@ -71,94 +92,94 @@ io.on("connection", (socket) => {
     }
   });
 
-socket.on("leaveRoom", async () => {
-  if (currentRoomId && currentUserId) {
-    try {
-      const otherUserId = await leaveRoom(currentRoomId, currentUserId);
-      
-      socket.to(currentRoomId).emit("userLeft", { 
-        userId: currentUserId,
-        message: "User left the room - room deleted" 
-      });
+  socket.on("leaveRoom", async () => {
+    if (currentRoomId && currentUserId) {
+      try {
+        const otherUserId = await leaveRoom(currentRoomId, currentUserId);
 
-      if (otherUserId) {
-        socket.to(currentRoomId).emit("findNewRoom");
-      }
-
-      socket.leave(currentRoomId);
-
-      currentRoomId = await findOrCreateRoom(currentUserId);
-      socket.join(currentRoomId);
-
-      const roomInfo = await getRoomInfo(currentRoomId);
-      socket.emit("roomAssigned", {
-        roomId: currentRoomId,
-        members: roomInfo.members,
-        status: roomInfo.status,
-      });
-
-      console.log(`User ${currentUserId} moved to new room ${currentRoomId}`);
-    } catch (error) {
-      console.error("Error leaving room:", error);
-    }
-  }
-});
-
-socket.on("searchNewRoom", async () => {
-  if (currentUserId) {
-    try {
-      if (currentRoomId) {
-        socket.leave(currentRoomId);
-      }
-
-      currentRoomId = await findOrCreateRoom(currentUserId);
-      socket.join(currentRoomId);
-
-      const roomInfo = await getRoomInfo(currentRoomId);
-      socket.emit("roomAssigned", {
-        roomId: currentRoomId,
-        members: roomInfo.members,
-        status: roomInfo.status,
-      });
-
-      if (roomInfo.members === "2") {
-        socket.to(currentRoomId).emit("userJoined", {
+        socket.to(currentRoomId).emit("userLeft", {
           userId: currentUserId,
-          roomId: currentRoomId,
+          message: "User left the room - room deleted",
         });
+
+        if (otherUserId) {
+          socket.to(currentRoomId).emit("findNewRoom");
+        }
+
+        socket.leave(currentRoomId);
+
+        currentRoomId = await findOrCreateRoom(currentUserId);
+        socket.join(currentRoomId);
+
+        const roomInfo = await getRoomInfo(currentRoomId);
+        socket.emit("roomAssigned", {
+          roomId: currentRoomId,
+          members: roomInfo.members,
+          status: roomInfo.status,
+        });
+
+        console.log(`User ${currentUserId} moved to new room ${currentRoomId}`);
+      } catch (error) {
+        console.error("Error leaving room:", error);
       }
-
-      console.log(`User ${currentUserId} found new room ${currentRoomId}`);
-    } catch (error) {
-      console.error("Error searching new room:", error);
     }
-  }
-});
+  });
 
-socket.on("disconnect", async () => {
-  console.log("User disconnected:", socket.id);
-  
-  if (currentRoomId && currentUserId) {
-    try {
-      const otherUserId = await leaveRoom(currentRoomId, currentUserId);
+  socket.on("searchNewRoom", async () => {
+    if (currentUserId) {
+      try {
+        if (currentRoomId) {
+          socket.leave(currentRoomId);
+        }
 
-      socket.to(currentRoomId).emit("userLeft", { 
-        userId: currentUserId,
-        message: "User disconnected - room deleted" 
-      });
+        currentRoomId = await findOrCreateRoom(currentUserId);
+        socket.join(currentRoomId);
 
-      if (otherUserId) {
-        socket.to(currentRoomId).emit("findNewRoom");
+        const roomInfo = await getRoomInfo(currentRoomId);
+        socket.emit("roomAssigned", {
+          roomId: currentRoomId,
+          members: roomInfo.members,
+          status: roomInfo.status,
+        });
+
+        if (roomInfo.members === "2") {
+          socket.to(currentRoomId).emit("userJoined", {
+            userId: currentUserId,
+            roomId: currentRoomId,
+          });
+        }
+
+        console.log(`User ${currentUserId} found new room ${currentRoomId}`);
+      } catch (error) {
+        console.error("Error searching new room:", error);
       }
-
-      socket.leave(currentRoomId);
-    } catch (error) {
-      console.error("Error handling disconnect:", error);
     }
-  }
+  });
 
-  userSockets.delete(socket.id);
-});
+  socket.on("disconnect", async () => {
+    console.log("User disconnected:", socket.id);
+
+    if (currentRoomId && currentUserId) {
+      try {
+        const otherUserId = await leaveRoom(currentRoomId, currentUserId);
+
+        socket.to(currentRoomId).emit("userLeft", {
+          userId: currentUserId,
+          message: "User disconnected - room deleted",
+        });
+
+        if (otherUserId) {
+          socket.to(currentRoomId).emit("findNewRoom");
+        }
+
+        socket.leave(currentRoomId);
+      } catch (error) {
+        console.error("Error handling disconnect:", error);
+      }
+    }
+
+    userSockets.delete(socket.id);
+  });
 });
 
 app.use(

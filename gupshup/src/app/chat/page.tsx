@@ -33,6 +33,7 @@ export default function Chat() {
       socket.emit("getMessage", { message: msg.message });
     }
     setSelfMessage("");
+    setIsEmojiOpen(false);
   };
 
   const handleNextRoom = () => {
@@ -44,7 +45,7 @@ export default function Chat() {
   useEffect(() => {
     if (!socket.connected) socket.connect();
 
-    socket.emit("findRoom", { userId: user?._id || "anonymous" });
+    socket.emit("findRoom", { userId: socket.id });
 
     socket.on("roomAssigned", (data) => {
       console.log("Assigned to room:", data.roomId);
@@ -93,109 +94,111 @@ export default function Chat() {
   return (
     <div className="text-black font-[family-name:var(--font-kiwi-regular)] flex flex-col">
       <div className="flex flex-col h-screen">
-        <div className="border-b-[1px] border-black h-fit pb-2 w-full">
-          <div className="bg-[#FDC62E] min-w-full h-6"></div>
-          <div className="flex items-center justify-between px-10">
-            <div className="flex items-center gap-5">
+        <div className="bg-[#FDC62E] min-w-full h-6"></div>
+        <div className="flex flex-grow w-full overflow-hidden">
+          <div className="w-2/3 h-full flex items-end">
+            <div className="flex flex-col h-full px-5 border-r items-center gap-2">
               <Link href="/">
                 <img src="/fullLogo.svg" alt="logo" className="w-fit h-15" />
               </Link>
               <div className="flex gap-1 items-center">
-                <div className="text-2xl">Chatroom</div>
+                <div className="text-xl">Chatroom</div>
                 <div className="text-[#5A5A5A] text-sm">(00:34:07)</div>
               </div>
             </div>
-            <div className="flex items-center gap-10">
-              {user ? (
-                <div className="w-10 h-10 rounded-full overflow-hidden">
-                  {user.avatar ? (
-                    <Image
-                      src={user.avatar}
-                      alt="Profile"
-                      width={40}
-                      height={40}
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
-                      {user.userName?.charAt(0)?.toUpperCase() || "U"}
+            <div className="w-full h-full mx-5 pb-5">
+              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2"></div>
+              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2"></div>
+            </div>
+          </div>
+          <div className="flex flex-col w-1/3 h-full border-l border-black">
+            <div className=" flex border-b border-black justify-end py-4  pr-5">
+              <div className="flex items-center gap-10">
+                {user ? (
+                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                    {user.avatar ? (
+                      <Image
+                        src={user.avatar}
+                        alt="Profile"
+                        width={40}
+                        height={40}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+                        {user.userName?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-2xl hover:cursor-pointer"
+                    href="login"
+                  >
+                    Log In
+                  </Link>
+                )}
+                <Button
+                  buttonText="Next room [spacebar] ➜"
+                  className="h-10"
+                  onClick={handleNextRoom}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col mx-5 h-full">
+              <div className="text-2xl">chat</div>
+              <div className="flex-grow overflow-y-auto">
+                <MessageBox data={messages} />
+              </div>
+              <div className="mb-4">
+                <form
+                  className="relative flex items-center"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="right-12 px-4 py-3 rounded-tl-2xl rounded-bl-2xl bg-[#F2F2F2] hover:bg-[#e5e5e5]"
+                    onClick={() => setIsEmojiOpen(!isEmojiOpen)}
+                    suppressHydrationWarning={true}
+                  >
+                    😊
+                  </button>
+                  {isEmojiOpen && (
+                    <div className="absolute bottom-16 right-0 z-50">
+                      <EmojiPicker
+                        onEmojiClick={(emojiData) => {
+                          setSelfMessage((prev) => prev + emojiData.emoji);
+                        }}
+                      />
                     </div>
                   )}
-                </div>
-              ) : (
-                <Link
-                  className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-2xl hover:cursor-pointer"
-                  href="login"
-                >
-                  Log In
-                </Link>
-              )}
-              <Button
-                buttonText="Next room [spacebar] ➜"
-                className="h-10"
-                onClick={handleNextRoom}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-grow w-full overflow-hidden">
-          <div className="w-2/3 h-full flex flex-col items-end mr-10">
-            <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-9/12 my-2">
-              <div></div>
-            </div>
-            <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-9/12 my-2"></div>
-          </div>
-          <div className="flex flex-col w-1/3 h-full border-l border-black px-5">
-            <div className="text-2xl">chat</div>
-            <div className="flex-grow overflow-y-auto">
-              <MessageBox data={messages} />
-            </div>
-            <div className="mb-4">
-              <form
-                className="relative flex items-center"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                }}
-              >
-                <button
-                  type="button"
-                  className="right-12 px-4 py-3 rounded-tl-2xl rounded-bl-2xl bg-[#F2F2F2] hover:bg-[#e5e5e5]"
-                  onClick={() => setIsEmojiOpen(!isEmojiOpen)}
-                  suppressHydrationWarning={true}
-                >
-                  😊
-                </button>
-                {isEmojiOpen && (
-                  <div className="absolute bottom-16 right-0 z-50">
-                  <EmojiPicker
-                    skinTonesDisabled={true}
-                    onEmojiClick={(emojiData) => {
-                    setSelfMessage(prev => prev + emojiData.emoji);
-                    setIsEmojiOpen(false);
+
+                  <input
+                    type="text"
+                    placeholder="Type a message"
+                    className="w-full px-1 py-3 bg-[#F2F2F2] placeholder:text-[#898989] placeholder:text-sm rounded-br-2xl rounded-tr-2xl border-none focus:outline-none focus:ring-0 pr-20"
+                    value={selfMessage}
+                    onChange={(e) => {
+                      setSelfMessage(e.target.value);
                     }}
                   />
-                  </div>
-                )}
-                
-                <input
-                  type="text"
-                  placeholder="Type a message"
-                  className="w-full px-1 py-3 bg-[#F2F2F2] placeholder:text-[#898989] placeholder:text-sm rounded-br-2xl rounded-tr-2xl border-none focus:outline-none focus:ring-0 pr-20"
-                  value={selfMessage}
-                  onChange={(e) => {
-                    setSelfMessage(e.target.value);
-                  }}
-                />
 
-                <button
-                  type="submit"
-                  className="absolute right-2 p-2 rounded-xl hover:bg-[#e5e5e5]"
-                  aria-label="Send message"
-                  onClick={handleChatBtn}
-                >
-                  <img src="/submitArrow.svg" alt="Send" className="w-5 h-5" />
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    className="absolute right-2 p-2 rounded-xl hover:bg-[#e5e5e5]"
+                    aria-label="Send message"
+                    onClick={handleChatBtn}
+                  >
+                    <img
+                      src="/submitArrow.svg"
+                      alt="Send"
+                      className="w-5 h-5"
+                    />
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         </div>
