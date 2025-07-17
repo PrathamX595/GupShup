@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation";
 import useAuth from "../hooks/useAuth";
 import Image from "next/image";
 import { socket } from "../services/socket";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import MessageBox from "../components/MessageBox";
 import EmojiPicker from "emoji-picker-react";
-import Stream from "stream";
 
 interface Imessages {
   message: string;
@@ -26,8 +25,43 @@ export default function Chat() {
   const [peer, setPeer] = useState<RTCPeerConnection>();
   const [stream, setStream] = useState<MediaStream>();
   const [incomingStream, setIncomingStream] = useState<MediaStream>();
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
-  const sendCallReq = async () => {
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  const streamRef = useRef<MediaStream | undefined>(undefined);
+  const peerRef = useRef<RTCPeerConnection | undefined>(undefined);
+  const userRef = useRef(user);
+
+  useEffect(() => {
+    streamRef.current = stream;
+  }, [stream]);
+
+  useEffect(() => {
+    peerRef.current = peer;
+  }, [peer]);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  useEffect(() => {
+    if (localVideoRef.current && stream) {
+      localVideoRef.current.srcObject = stream;
+      console.log("✅ Local video source updated");
+    }
+  }, [stream]);
+
+  // Direct approach to setting remote video
+  useEffect(() => {
+    if (remoteVideoRef.current && incomingStream) {
+      console.log("🎥 Setting remote stream directly");
+      remoteVideoRef.current.srcObject = incomingStream;
+    }
+  }, [incomingStream]);
+
+  const createPeerConnection = () => {
     const newPeer = new RTCPeerConnection({
       iceServers: [
         {
@@ -39,34 +73,62 @@ export default function Chat() {
       ],
     });
 
+    newPeer.ontrack = (e) => {
+      console.log("🎥 Received remote track:", e.track.kind);
+      console.log("🎥 Track details:", {
+        id: e.track.id,
+        kind: e.track.kind,
+        readyState: e.track.readyState,
+        enabled: e.track.enabled,
+        muted: e.track.muted,
+      });
+      
+      if (e.streams && e.streams[0]) {
+        const stream = e.streams[0];
+        console.log("🎥 Stream details:", {
+          id: stream.id,
+          active: stream.active,
+          videoTracks: stream.getVideoTracks().length,
+          audioTracks: stream.getAudioTracks().length,
+        });
+        
+        setIncomingStream(stream);
+      }
+    };
+
+    newPeer.onconnectionstatechange = () => {
+      console.log("🔗 Peer connection state:", newPeer.connectionState);
+    };
+
+    newPeer.oniceconnectionstatechange = () => {
+      console.log("🧊 ICE connection state:", newPeer.iceConnectionState);
+    };
+
+    return newPeer;
+  };
+
+  const sendCallReq = async () => {
+    const newPeer = createPeerConnection();
     setPeer(newPeer);
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        newPeer.addTrack(track, streamRef.current!);
+        console.log(`Added ${track.kind} track to peer connection`);
+      });
+    }
 
     const offer = await newPeer.createOffer();
     await newPeer.setLocalDescription(offer);
     return offer;
   };
 
-  const sendStream = (stream: MediaStream) => {
-  if (!peer) return;
-  
-  const tracks = stream.getTracks();
-  const senders = peer.getSenders();
-  
-  for (const track of tracks) {
-    const existingSender = senders.find(sender => sender.track === track);
-    
-    if (!existingSender) {
-      peer.addTrack(track, stream);
-    }
-  }
-};
-
   const handleChatBtn = () => {
     const msg: Imessages = {
       message: selfMessage.trim(),
       type: "self",
     };
-    if (msg.message != "") {
+    if (msg.message !== "") {
       setMessages((prev) => [...prev, msg]);
       socket.emit("getMessage", { message: msg.message });
     }
@@ -75,69 +137,153 @@ export default function Chat() {
   };
 
   const handleNextRoom = () => {
+    if (peerRef.current) {
+      peerRef.current.close();
+      setPeer(undefined);
+    }
+    setIncomingStream(undefined);
     setMessages([]);
     setRoomStatus("searching");
     socket.emit("leaveRoom");
   };
 
   const getUserMedia = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
-    setStream(stream);
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      setStream(mediaStream);
+      console.log("Got user media successfully");
+    } catch (error) {
+      console.error("Error accessing media devices:", error);
+    }
   };
 
-  const handleIncomingStreams = (e: any) => {
-    const streams = e.streams;
-    setIncomingStream(streams[0]);
+  // Simple manual play function
+  const handleManualPlay = async () => {
+    if (remoteVideoRef.current && incomingStream) {
+      try {
+        console.log("🔴 Manual play attempt");
+        const video = remoteVideoRef.current;
+        
+        // Force the stream assignment
+        video.srcObject = incomingStream;
+        video.muted = false; // Try unmuted
+        
+        await video.play();
+        console.log("✅ Video playing!");
+      } catch (error) {
+        console.error("❌ Play failed:", error);
+        
+        // Try muted
+        try {
+          const video = remoteVideoRef.current;
+          video.muted = true;
+          await video.play();
+          console.log("✅ Video playing muted!");
+          
+          // Unmute after 1 second
+          setTimeout(() => {
+            if (video) video.muted = false;
+          }, 1000);
+        } catch (mutedError) {
+          console.error("❌ Even muted play failed:", mutedError);
+        }
+      }
+    }
   };
 
   useEffect(() => {
-    if (!socket.connected) socket.connect();
+    console.log("Initializing socket connection...");
 
-    socket.emit("findRoom", { userId: socket.id });
+    if (!socket.connected) {
+      socket.connect();
+    }
 
-    socket.on("roomAssigned", async (data) => {
+    const handleConnect = () => {
+      console.log("Socket connected with ID:", socket.id);
+      setIsSocketConnected(true);
+      socket.emit("findRoom", { userId: userRef.current?._id || socket.id });
+    };
+
+    const handleDisconnect = () => {
+      console.log("Socket disconnected");
+      setIsSocketConnected(false);
+    };
+
+    const handleRoomAssigned = async (data: any) => {
       console.log("Assigned to room:", data.roomId);
       console.log("members:", data.members);
       console.log("Room status:", data.status);
       setRoomStatus(data.status);
-      const offer = await sendCallReq();
-      const socketId = socket.id;
-      socket.emit("call-req", { socketId, offer });
-    });
 
-    socket.on("got-req", async (data) => {
+      if (data.status === "active" && streamRef.current) {
+        const offer = await sendCallReq();
+        socket.emit("call-req", { socketId: socket.id, offer });
+      }
+    };
+
+    const handleGotReq = async (data: any) => {
       const { socketId, offer } = data;
-      await peer?.setRemoteDescription(offer);
-      const answer = await peer?.createAnswer(offer);
-      await peer?.setLocalDescription(answer);
+      console.log("Got call request from:", socketId);
+
+      if (!streamRef.current) {
+        console.error("No local stream available");
+        return;
+      }
+
+      const newPeer = createPeerConnection();
+      setPeer(newPeer);
+      streamRef.current.getTracks().forEach((track) => {
+        newPeer.addTrack(track, streamRef.current!);
+        console.log(`Added ${track.kind} track for answer`);
+      });
+
+      await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await newPeer.createAnswer();
+      await newPeer.setLocalDescription(answer);
       socket.emit("call-accepted", { socketId, answer });
-    });
+    };
 
-    socket.on("call-accepted", async (data) => {
+    const handleCallAccepted = async (data: any) => {
       const { answer } = data;
-      await peer?.setRemoteDescription(answer);
-      console.log("call accepted", answer);
-    });
+      console.log("Call accepted:", answer);
+      if (peerRef.current) {
+        await peerRef.current.setRemoteDescription(
+          new RTCSessionDescription(answer)
+        );
+        console.log("Remote description set successfully");
+      }
+    };
 
-    socket.on("userJoined", (data) => {
+    const handleUserJoined = (data: any) => {
+      console.log("User joined room:", data.userId || "Unknown User");
       setMessages([]);
       setRoomStatus("active");
-      console.log("User joined room:", data.userId);
-    });
+    };
 
-    socket.on("userLeft", (data) => {
-      console.log("User left room:", data.userId);
+    const handleUserLeft = (data: any) => {
+      console.log("User left room:", data.userId || "Unknown User");
       setRoomStatus("searching");
-    });
+      setIncomingStream(undefined);
+      if (peerRef.current) {
+        peerRef.current.close();
+        setPeer(undefined);
+      }
+    };
 
-    socket.on("findNewRoom", () => {
+    const handleFindNewRoom = () => {
+      console.log("Finding new room...");
       setMessages([]);
       setRoomStatus("searching");
+      setIncomingStream(undefined);
+      if (peerRef.current) {
+        peerRef.current.close();
+        setPeer(undefined);
+      }
       socket.emit("searchNewRoom");
-    });
+    };
 
     const handleSendMessage = (arg: any) => {
       const msg: Imessages = {
@@ -147,26 +293,41 @@ export default function Chat() {
       setMessages((prev) => [...prev, msg]);
     };
 
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("roomAssigned", handleRoomAssigned);
+    socket.on("got-req", handleGotReq);
+    socket.on("call-accepted", handleCallAccepted);
+    socket.on("userJoined", handleUserJoined);
+    socket.on("userLeft", handleUserLeft);
+    socket.on("findNewRoom", handleFindNewRoom);
     socket.on("sendMessage", handleSendMessage);
 
-    peer?.addEventListener("track", handleIncomingStreams);
-
     return () => {
+      console.log("Cleaning up socket listeners...");
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("roomAssigned", handleRoomAssigned);
+      socket.off("got-req", handleGotReq);
+      socket.off("call-accepted", handleCallAccepted);
+      socket.off("userJoined", handleUserJoined);
+      socket.off("userLeft", handleUserLeft);
+      socket.off("findNewRoom", handleFindNewRoom);
       socket.off("sendMessage", handleSendMessage);
-      socket.off("roomAssigned");
-      socket.off("userJoined");
-      socket.off("userLeft");
-      socket.off("findNewRoom");
-      socket.off("got-req");
-      socket.off("call-accepted");
-      peer?.removeEventListener("track", handleIncomingStreams);
-      socket.disconnect();
+
+      if (peerRef.current) {
+        peerRef.current.close();
+      }
+
+      if (socket.connected) {
+        socket.disconnect();
+      }
     };
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     getUserMedia();
-  }, [getUserMedia]);
+  }, []);
 
   return (
     <div className="text-black font-[family-name:var(--font-kiwi-regular)] flex flex-col">
@@ -180,49 +341,82 @@ export default function Chat() {
               </Link>
               <div className="flex gap-1 items-center">
                 <div className="text-xl">Chatroom</div>
-                <div className="text-[#5A5A5A] text-sm">(00:34:07)</div>
+                <div className="text-[#5A5A5A] text-sm">
+                  {isSocketConnected ? "🟢 Connected" : "🔴 Disconnected"}
+                </div>
               </div>
             </div>
             <div className="w-full h-full mx-5 pb-5">
-              <div
-                className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2"
-              >
-                {stream && (
-                  <video
-                    ref={(video) => {
-                      if (video) video.srcObject = stream;
-                    }}
-                    autoPlay
-                    muted={true}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      borderRadius: "0.375rem",
-                      aspectRatio: "16/9",
-                    }}
-                  />
-                )}
+              {/* Local video */}
+              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover rounded-md"
+                />
+                <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                  You
+                </div>
               </div>
-              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2" onClick={() => {
-                  if (stream) {
-                    sendStream(stream);
-                  }
-                }}>
-                {incomingStream && (
-                  <video
-                    ref={(video) => {
-                      if (video) video.srcObject = incomingStream;
-                    }}
-                    autoPlay
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      borderRadius: "0.375rem",
-                      aspectRatio: "16/9",
-                    }}
-                  />
+
+              {/* Remote video - SIMPLIFIED */}
+              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative">
+                {incomingStream ? (
+                  <>
+                    <video
+                      ref={remoteVideoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover rounded-md bg-black"
+                      onLoadedMetadata={() => {
+                        console.log("📺 Remote video metadata loaded");
+                        if (remoteVideoRef.current) {
+                          remoteVideoRef.current.play().catch(e => {
+                            console.log("Auto play failed, will need manual play:", e);
+                          });
+                        }
+                      }}
+                      onError={(e) => {
+                        console.error("❌ Video error:", e);
+                      }}
+                      onPlay={() => {
+                        console.log("✅ Remote video is playing!");
+                      }}
+                    />
+                    <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                      Stranger
+                    </div>
+                    
+                    <button
+                      onClick={handleManualPlay}
+                      className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      ▶️ PLAY
+                    </button>
+                    
+                    {/* Debug info */}
+                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
+                      <div>Stream: {incomingStream.active ? '✅ Active' : '❌ Inactive'}</div>
+                      <div>Video Tracks: {incomingStream.getVideoTracks().length}</div>
+                      <div>Audio Tracks: {incomingStream.getAudioTracks().length}</div>
+                      {incomingStream.getVideoTracks()[0] && (
+                        <div>Video State: {incomingStream.getVideoTracks()[0].readyState}</div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-600">
+                    <div className="text-4xl mb-2">
+                      {roomStatus === "searching" ? "🔍" : "⏳"}
+                    </div>
+                    <div>
+                      {roomStatus === "searching"
+                        ? "Searching for partner..."
+                        : "Waiting for video..."}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -271,7 +465,9 @@ export default function Chat() {
                   className="relative flex items-center"
                   onSubmit={(e) => {
                     e.preventDefault();
+                    handleChatBtn();
                   }}
+                  suppressHydrationWarning={true}
                 >
                   <button
                     type="button"
@@ -299,6 +495,7 @@ export default function Chat() {
                     onChange={(e) => {
                       setSelfMessage(e.target.value);
                     }}
+                    suppressHydrationWarning={true}
                   />
 
                   <button
@@ -306,6 +503,7 @@ export default function Chat() {
                     className="absolute right-2 p-2 rounded-xl hover:bg-[#e5e5e5]"
                     aria-label="Send message"
                     onClick={handleChatBtn}
+                    suppressHydrationWarning={true}
                   >
                     <img
                       src="/submitArrow.svg"
