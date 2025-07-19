@@ -75,6 +75,16 @@ io.on("connection", (socket) => {
     socket.to(socketId).emit("call-accepted", { answer });
   });
 
+  socket.on("ice-candidate", (data) => {
+    const { candidate } = data;
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("ice-candidate", { 
+        candidate,
+        from: socket.id 
+      });
+    }
+  });
+
   socket.on("getMessage", (arg) => {
     if (currentRoomId) {
       socket.to(currentRoomId).emit("sendMessage", {
