@@ -9,10 +9,16 @@ import { socket } from "../services/socket";
 import { useEffect, useState, useRef, useCallback } from "react";
 import MessageBox from "../components/MessageBox";
 import EmojiPicker from "emoji-picker-react";
+import {
+  FaVideo,
+  FaVideoSlash,
+  FaMicrophone,
+  FaMicrophoneSlash,
+} from "react-icons/fa";
 
 interface Imessages {
   message: string;
-  type: "self" | "friend";
+  type: "self" | "friend" | "system";
 }
 
 export default function Chat() {
@@ -26,7 +32,8 @@ export default function Chat() {
   const [stream, setStream] = useState<MediaStream>();
   const [incomingStream, setIncomingStream] = useState<MediaStream>();
   const [isSocketConnected, setIsSocketConnected] = useState(false);
-  
+  const [isVideoOn, setIsVideoOn] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(false);
   const [connectionState, setConnectionState] = useState<string>("new");
   const [iceCandidates, setIceCandidates] = useState<RTCIceCandidate[]>([]);
   const [hasVideo, setHasVideo] = useState<boolean>(false);
@@ -37,6 +44,42 @@ export default function Chat() {
   const streamRef = useRef<MediaStream | undefined>(undefined);
   const peerRef = useRef<RTCPeerConnection | undefined>(undefined);
   const userRef = useRef(user);
+
+  const handleMicToggle = () => {
+    if (streamRef.current) {
+      const audioTracks = streamRef.current.getAudioTracks();
+      audioTracks.forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setIsMicOn(!isMicOn);
+
+      const systemMsg: Imessages = {
+        message: isMicOn ? "Microphone turned off" : "Microphone turned on",
+        type: "system",
+      };
+      setMessages((prev) => [...prev, systemMsg]);
+    }
+  };
+
+  const handleVideoToggle = () => {
+    if (streamRef.current) {
+      const videoTracks = streamRef.current.getVideoTracks();
+      videoTracks.forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoOn(!isVideoOn);
+      const systemMsg: Imessages = {
+        message: isVideoOn ? "Camera turned off" : "Camera turned on",
+        type: "system",
+      };
+      setMessages((prev) => [...prev, systemMsg]);
+      if (localVideoRef.current) {
+        if (!isVideoOn) {
+          localVideoRef.current.srcObject = streamRef.current;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     streamRef.current = stream;
@@ -50,26 +93,36 @@ export default function Chat() {
     userRef.current = user;
   }, [user]);
 
-  useEffect(() => {
+useEffect(() => {
     if (localVideoRef.current && stream) {
       localVideoRef.current.srcObject = stream;
-      console.log("✅ Local video source updated");
+      console.log("Local video source updated");
+      const videoTracks = stream.getVideoTracks();
+      const audioTracks = stream.getAudioTracks();
+      
+      videoTracks.forEach(track => {
+        track.enabled = isVideoOn;
+      });
+      
+      audioTracks.forEach(track => {
+        track.enabled = isMicOn;
+      });
     }
-  }, [stream]);
+  }, [stream, isVideoOn, isMicOn]);
 
   useEffect(() => {
     if (remoteVideoRef.current && incomingStream) {
-      console.log("🎥 Setting remote stream directly");
+      console.log("Setting remote stream directly");
       remoteVideoRef.current.srcObject = incomingStream;
-      
+
       const videoTracks = incomingStream.getVideoTracks();
       setHasVideo(videoTracks.length > 0);
-      
+
       if (videoTracks.length > 0) {
         console.log("Video track details:", {
           label: videoTracks[0].label,
           enabled: videoTracks[0].enabled,
-          readyState: videoTracks[0].readyState
+          readyState: videoTracks[0].readyState,
         });
       }
     }
@@ -107,7 +160,7 @@ export default function Chat() {
     newPeer.onconnectionstatechange = () => {
       console.log("Peer connection state:", newPeer.connectionState);
       setConnectionState(newPeer.connectionState);
-      
+
       if (newPeer.connectionState === "failed") {
         console.log("Connection failed - this explains the black screen");
       }
@@ -115,7 +168,7 @@ export default function Chat() {
 
     newPeer.oniceconnectionstatechange = () => {
       console.log("ICE connection state:", newPeer.iceConnectionState);
-      
+
       if (newPeer.iceConnectionState === "failed") {
         console.log("ICE connection failed - video won't display");
       }
@@ -123,30 +176,33 @@ export default function Chat() {
 
     newPeer.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log("🧊 Generated ICE candidate:", event.candidate.candidate.substring(0, 50) + "...");
+        console.log(
+          "Generated ICE candidate:",
+          event.candidate.candidate.substring(0, 50) + "..."
+        );
         socket.emit("ice-candidate", { candidate: event.candidate });
       }
     };
 
     newPeer.ontrack = (e) => {
-      console.log("🎥 Received remote track:", e.track.kind);
-      console.log("🎥 Track details:", {
+      console.log("Received remote track:", e.track.kind);
+      console.log("Track details:", {
         id: e.track.id,
         kind: e.track.kind,
         readyState: e.track.readyState,
         enabled: e.track.enabled,
         muted: e.track.muted,
       });
-      
+
       if (e.streams && e.streams[0]) {
         const stream = e.streams[0];
-        console.log("🎥 Stream details:", {
+        console.log("Stream details:", {
           id: stream.id,
           active: stream.active,
           videoTracks: stream.getVideoTracks().length,
           audioTracks: stream.getAudioTracks().length,
         });
-        
+
         setIncomingStream(stream);
       }
     };
@@ -213,28 +269,28 @@ export default function Chat() {
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          frameRate: { ideal: 30 }
+          frameRate: { ideal: 30 },
         },
       });
       setStream(mediaStream);
       console.log("Got user media with ideal constraints");
     } catch (error) {
       console.error("Error with ideal constraints:", error);
-      
+
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
-          video: true
+          video: true,
         });
         setStream(mediaStream);
         console.log("Got user media with minimal constraints");
       } catch (minimalError) {
         console.error("Error with minimal constraints:", minimalError);
-        
+
         try {
           const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
             audio: true,
-            video: false
+            video: false,
           });
           setStream(audioOnlyStream);
           console.log("Fallback to audio only");
@@ -250,41 +306,45 @@ export default function Chat() {
       console.log("Missing video element or stream");
       return;
     }
-    
+
     try {
       console.log("Manual play attempt");
       const video = remoteVideoRef.current;
-      
+
       const videoTracks = incomingStream.getVideoTracks();
-      console.log(`Stream has ${videoTracks.length} video tracks and is ${incomingStream.active ? 'active' : 'inactive'}`);
-      
+      console.log(
+        `Stream has ${videoTracks.length} video tracks and is ${
+          incomingStream.active ? "active" : "inactive"
+        }`
+      );
+
       if (videoTracks.length > 0) {
         console.log("Video track state:", videoTracks[0].readyState);
-        videoTracks.forEach(track => {
+        videoTracks.forEach((track) => {
           track.enabled = true;
         });
       }
-      
+
       video.srcObject = incomingStream;
       video.muted = false;
-      
+
       await video.play();
       console.log("Video playing");
     } catch (error) {
       console.error(" Play failed:", error);
-      
+
       try {
         const video = remoteVideoRef.current;
         video.muted = true;
         await video.play();
         console.log("Video playing muted!");
-        
+
         setTimeout(() => {
           if (video) video.muted = false;
         }, 1000);
       } catch (mutedError) {
         console.error("Even muted play failed:", mutedError);
-        
+
         alert("Click OK to enable video playback");
         try {
           if (remoteVideoRef.current) {
@@ -351,10 +411,10 @@ export default function Chat() {
         });
 
         await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
-        
+
         const answer = await newPeer.createAnswer();
         await newPeer.setLocalDescription(answer);
-        
+
         socket.emit("call-accepted", { socketId, answer });
       } catch (error) {
         console.error("Error handling call request:", error);
@@ -364,10 +424,12 @@ export default function Chat() {
     const handleCallAccepted = async (data: any) => {
       const { answer } = data;
       console.log("Call accepted, setting remote description");
-      
+
       try {
         if (peerRef.current) {
-          await peerRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+          await peerRef.current.setRemoteDescription(
+            new RTCSessionDescription(answer)
+          );
           console.log("Remote description set successfully");
         } else {
           console.error("No peer connection available");
@@ -380,7 +442,7 @@ export default function Chat() {
     const handleIceCandidate = async (data: any) => {
       const { candidate, from } = data;
       console.log(" Received ICE candidate from peer");
-      
+
       if (peerRef.current && peerRef.current.remoteDescription) {
         try {
           await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -390,7 +452,7 @@ export default function Chat() {
         }
       } else {
         console.log("Storing ICE candidate for later");
-        setIceCandidates(prev => [...prev, new RTCIceCandidate(candidate)]);
+        setIceCandidates((prev) => [...prev, new RTCIceCandidate(candidate)]);
       }
     };
 
@@ -406,7 +468,7 @@ export default function Chat() {
       setIncomingStream(undefined);
       setConnectionState("new");
       setHasVideo(false);
-      
+
       if (peerRef.current) {
         peerRef.current.close();
         setPeer(undefined);
@@ -421,13 +483,13 @@ export default function Chat() {
       setIncomingStream(undefined);
       setConnectionState("new");
       setHasVideo(false);
-      
+
       if (peerRef.current) {
         peerRef.current.close();
         setPeer(undefined);
         peerRef.current = undefined;
       }
-      
+
       socket.emit("searchNewRoom");
     };
 
@@ -485,15 +547,50 @@ export default function Chat() {
         <div className="bg-[#FDC62E] min-w-full h-6"></div>
         <div className="flex flex-grow w-full overflow-hidden">
           <div className="w-2/3 h-full flex items-end">
-            <div className="flex flex-col h-full px-5 border-r items-center gap-2">
-              <Link href="/">
-                <img src="/fullLogo.svg" alt="logo" className="w-fit h-15" />
-              </Link>
-              <div className="flex gap-1 items-center">
-                <div className="text-xl">Chatroom</div>
-                <div className="text-[#5A5A5A] text-sm">
-                  {isSocketConnected ? "🟢 Connected" : "🔴 Disconnected"}
+            <div className="flex flex-col h-full px-5 border-r justify-between items-center gap-2">
+              <div className="flex flex-col">
+                <Link href="/">
+                  <img src="/fullLogo.svg" alt="logo" className="w-fit h-15" />
+                </Link>
+                <div className="flex gap-1 items-center">
+                  <div className="text-xl">Chatroom</div>
+                  <div className="text-[#5A5A5A] text-sm">
+                    {isSocketConnected ? "🟢 Connected" : "🔴 Disconnected"}
+                  </div>
                 </div>
+              </div>
+
+              <div className="w-full flex justify-center gap-10 mb-10">
+                {isVideoOn ? (
+                  <div
+                    className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E]"
+                    onClick={handleVideoToggle}
+                  >
+                    <FaVideo color="black" size={20} />
+                  </div>
+                ) : (
+                  <div
+                    className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600"
+                    onClick={handleVideoToggle}
+                  >
+                    <FaVideoSlash color="white" size={20} />
+                  </div>
+                )}
+                {isMicOn ? (
+                  <div
+                    className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E]"
+                    onClick={handleMicToggle}
+                  >
+                    <FaMicrophone color="black" size={20} />
+                  </div>
+                ) : (
+                  <div
+                    className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600"
+                    onClick={handleMicToggle}
+                  >
+                    <FaMicrophoneSlash color="white" size={20} />
+                  </div>
+                )}
               </div>
             </div>
             <div className="w-full h-full mx-5 pb-5">
@@ -520,8 +617,11 @@ export default function Chat() {
                       className="w-full h-full object-cover rounded-md bg-black"
                       onLoadedMetadata={() => {
                         if (remoteVideoRef.current) {
-                          remoteVideoRef.current.play().catch(e => {
-                            console.log("Auto play failed, will need manual play:", e);
+                          remoteVideoRef.current.play().catch((e) => {
+                            console.log(
+                              "Auto play failed, will need manual play:",
+                              e
+                            );
                           });
                         }
                       }}
@@ -538,17 +638,14 @@ export default function Chat() {
                   </>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-600">
-                    <div className="text-4xl mb-2">
-                      {roomStatus === "searching" ? "🔍" : "⏳"}
-                    </div>
-                    <div>
+                    <div className="text-black">
                       {roomStatus === "searching"
                         ? "Searching for partner..."
-                        : connectionState === "connecting" 
-                          ? "Connecting to peer..." 
-                          : connectionState === "failed"
-                          ? "Connection failed, try next room"
-                          : "Waiting for video..."}
+                        : connectionState === "connecting"
+                        ? "Connecting to peer..."
+                        : connectionState === "failed"
+                        ? "Connection failed, try next room"
+                        : "Waiting for video..."}
                     </div>
                   </div>
                 )}

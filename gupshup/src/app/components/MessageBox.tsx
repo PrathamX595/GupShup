@@ -1,9 +1,10 @@
 import FrndMsg from "./FrndMsg";
 import SelfMsg from "./SelfMsg";
+import SystemMsg from "./SystemMsg";
 
 interface messages {
   message: string;
-  type: "self" | "friend";
+  type: "self" | "friend" | "system";
 }
 const MessageBox = ({ data }: { data: messages[] }) => {
   return (
@@ -11,7 +12,9 @@ const MessageBox = ({ data }: { data: messages[] }) => {
       {data.map((msg, index) => {
         if (msg.type == "self") {
           return <SelfMsg message={msg.message} key={index} />;
-        } else {
+        } else if(msg.type == "system"){
+          return <SystemMsg message={msg.message} key={index} />;
+        }else{
           return <FrndMsg message={msg.message} key={index} />;
         }
       })}
