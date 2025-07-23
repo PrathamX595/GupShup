@@ -15,6 +15,7 @@ import {
   FaMicrophone,
   FaMicrophoneSlash,
 } from "react-icons/fa";
+import { IoMdPersonAdd } from "react-icons/io";
 
 interface Imessages {
   message: string;
@@ -38,12 +39,19 @@ export default function Chat() {
   const [iceCandidates, setIceCandidates] = useState<RTCIceCandidate[]>([]);
   const [hasVideo, setHasVideo] = useState<boolean>(false);
 
+  const [isOtherUserLoggedIn, setIsOtherUserLoggedIn] =
+    useState<boolean>(false);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
   const streamRef = useRef<MediaStream | undefined>(undefined);
   const peerRef = useRef<RTCPeerConnection | undefined>(undefined);
   const userRef = useRef(user);
+
+  const areBothUsersLoggedIn = () => {
+    return user && isOtherUserLoggedIn;
+  };
 
   const handleMicToggle = () => {
     if (streamRef.current) {
@@ -93,18 +101,18 @@ export default function Chat() {
     userRef.current = user;
   }, [user]);
 
-useEffect(() => {
+  useEffect(() => {
     if (localVideoRef.current && stream) {
       localVideoRef.current.srcObject = stream;
       console.log("Local video source updated");
       const videoTracks = stream.getVideoTracks();
       const audioTracks = stream.getAudioTracks();
-      
-      videoTracks.forEach(track => {
+
+      videoTracks.forEach((track) => {
         track.enabled = isVideoOn;
       });
-      
-      audioTracks.forEach(track => {
+
+      audioTracks.forEach((track) => {
         track.enabled = isMicOn;
       });
     }
@@ -259,6 +267,7 @@ useEffect(() => {
     setConnectionState("new");
     setIceCandidates([]);
     setHasVideo(false);
+    setIsOtherUserLoggedIn(false);
     socket.emit("leaveRoom");
   };
 
@@ -367,7 +376,10 @@ useEffect(() => {
     const handleConnect = () => {
       console.log("Socket connected with ID:", socket.id);
       setIsSocketConnected(true);
-      socket.emit("findRoom", { userId: userRef.current?._id || socket.id });
+      socket.emit("findRoom", {
+        userId: userRef.current?._id || socket.id,
+        isLoggedIn: !!userRef.current,
+      });
     };
 
     const handleDisconnect = () => {
@@ -380,6 +392,13 @@ useEffect(() => {
       console.log("members:", data.members);
       console.log("Room status:", data.status);
       setRoomStatus(data.status);
+
+      if (data.status === "active") {
+        console.log("Room is active, sending auth status to other user");
+        socket.emit("userAuthStatus", {
+          isLoggedIn: !!userRef.current,
+        });
+      }
 
       if (data.status === "active" && streamRef.current) {
         try {
@@ -458,8 +477,15 @@ useEffect(() => {
 
     const handleUserJoined = (data: any) => {
       console.log("User joined room:", data.userId || "Unknown User");
+      console.log("Other user login status:", data.isLoggedIn);
       setMessages([]);
       setRoomStatus("active");
+      setIsOtherUserLoggedIn(data.isLoggedIn || false);
+
+      console.log("Sending our auth status to new user");
+      socket.emit("userAuthStatus", {
+        isLoggedIn: !!userRef.current,
+      });
     };
 
     const handleUserLeft = (data: any) => {
@@ -468,6 +494,7 @@ useEffect(() => {
       setIncomingStream(undefined);
       setConnectionState("new");
       setHasVideo(false);
+      setIsOtherUserLoggedIn(false);
 
       if (peerRef.current) {
         peerRef.current.close();
@@ -483,6 +510,7 @@ useEffect(() => {
       setIncomingStream(undefined);
       setConnectionState("new");
       setHasVideo(false);
+      setIsOtherUserLoggedIn(false);
 
       if (peerRef.current) {
         peerRef.current.close();
@@ -490,7 +518,9 @@ useEffect(() => {
         peerRef.current = undefined;
       }
 
-      socket.emit("searchNewRoom");
+      socket.emit("searchNewRoom", {
+        isLoggedIn: !!userRef.current,
+      });
     };
 
     const handleSendMessage = (arg: any) => {
@@ -499,6 +529,11 @@ useEffect(() => {
         type: "friend",
       };
       setMessages((prev) => [...prev, msg]);
+    };
+
+    const handleUserAuthStatus = (data: any) => {
+      console.log("Received other user auth status:", data.isLoggedIn);
+      setIsOtherUserLoggedIn(data.isLoggedIn);
     };
 
     // Set up all the event listeners
@@ -512,7 +547,7 @@ useEffect(() => {
     socket.on("userLeft", handleUserLeft);
     socket.on("findNewRoom", handleFindNewRoom);
     socket.on("sendMessage", handleSendMessage);
-
+    socket.on("userAuthStatus", handleUserAuthStatus);
     // Clean up function
     return () => {
       console.log("Cleaning up socket listeners...");
@@ -526,6 +561,7 @@ useEffect(() => {
       socket.off("userLeft", handleUserLeft);
       socket.off("findNewRoom", handleFindNewRoom);
       socket.off("sendMessage", handleSendMessage);
+      socket.off("userAuthStatus", handleUserAuthStatus);
 
       if (peerRef.current) {
         peerRef.current.close();
@@ -560,37 +596,57 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div className="w-full flex justify-center gap-10 mb-10">
-                {isVideoOn ? (
-                  <div
-                    className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E]"
-                    onClick={handleVideoToggle}
-                  >
-                    <FaVideo color="black" size={20} />
-                  </div>
-                ) : (
-                  <div
-                    className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600"
-                    onClick={handleVideoToggle}
-                  >
-                    <FaVideoSlash color="white" size={20} />
-                  </div>
-                )}
-                {isMicOn ? (
-                  <div
-                    className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E]"
-                    onClick={handleMicToggle}
-                  >
-                    <FaMicrophone color="black" size={20} />
-                  </div>
-                ) : (
-                  <div
-                    className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600"
-                    onClick={handleMicToggle}
-                  >
-                    <FaMicrophoneSlash color="white" size={20} />
-                  </div>
-                )}
+              <div className="flex flex-col gap-5">
+                <div>
+                  {areBothUsersLoggedIn() ? (
+                    <div className="flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors">
+                      Add friend
+                      <div>
+                        <IoMdPersonAdd size={20} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full bg-gray-300 text-gray-600 text-md">
+                      {user
+                        ? isOtherUserLoggedIn
+                          ? "Add friend"
+                          : "anonymous peer"
+                        : "Login to add friends"}
+                    </div>
+                  )}
+                </div>
+                <div className="w-full flex justify-center gap-10 mb-10">
+                  {isVideoOn ? (
+                    <div
+                      className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors"
+                      onClick={handleVideoToggle}
+                    >
+                      <FaVideo color="black" size={20} />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600 cursor-pointer hover:bg-red-700 transition-colors"
+                      onClick={handleVideoToggle}
+                    >
+                      <FaVideoSlash color="white" size={20} />
+                    </div>
+                  )}
+                  {isMicOn ? (
+                    <div
+                      className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors"
+                      onClick={handleMicToggle}
+                    >
+                      <FaMicrophone color="black" size={20} />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600 cursor-pointer hover:bg-red-700 transition-colors"
+                      onClick={handleMicToggle}
+                    >
+                      <FaMicrophoneSlash color="white" size={20} />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div className="w-full h-full mx-5 pb-5">

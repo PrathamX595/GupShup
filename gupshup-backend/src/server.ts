@@ -33,12 +33,14 @@ io.on("connection", (socket) => {
   console.log("new user connected", socket.id);
   let currentRoomId: string | null = null;
   let currentUserId: string | null = null;
+  let isLoggedIn: boolean = false;
 
   socket.on("findRoom", async (data) => {
     try {
-      const { userId } = data;
+      const { userId, isLoggedIn: userLoggedIn } = data;
       currentUserId = userId;
-      userSockets.set(socket.id, { userId, socketId: socket.id });
+      isLoggedIn = userLoggedIn || false;
+      userSockets.set(socket.id, { userId, socketId: socket.id, isLoggedIn });
 
       currentRoomId = await findOrCreateRoom(userId);
       socket.join(currentRoomId);
@@ -55,11 +57,33 @@ io.on("connection", (socket) => {
         socket.to(currentRoomId).emit("userJoined", {
           userId,
           roomId: currentRoomId,
+          isLoggedIn: isLoggedIn,
         });
+
+        socket.to(currentRoomId).emit("requestAuthStatus");
       }
     } catch (error) {
       console.error("Error finding room:", error);
       socket.emit("error", { message: "Failed to find room" });
+    }
+  });
+
+  socket.on("userAuthStatus", (data) => {
+    const { isLoggedIn: authStatus } = data;
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("userAuthStatus", {
+        isLoggedIn: authStatus,
+        from: socket.id,
+      });
+    }
+  });
+
+  socket.on("requestAuthStatus", () => {
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("userAuthStatus", {
+        isLoggedIn: isLoggedIn,
+        from: socket.id,
+      });
     }
   });
 
@@ -78,9 +102,9 @@ io.on("connection", (socket) => {
   socket.on("ice-candidate", (data) => {
     const { candidate } = data;
     if (currentRoomId) {
-      socket.to(currentRoomId).emit("ice-candidate", { 
+      socket.to(currentRoomId).emit("ice-candidate", {
         candidate,
-        from: socket.id 
+        from: socket.id,
       });
     }
   });
@@ -108,6 +132,11 @@ io.on("connection", (socket) => {
         }
 
         socket.leave(currentRoomId);
+        userSockets.set(socket.id, {
+          userId: currentUserId,
+          socketId: socket.id,
+          isLoggedIn,
+        });
 
         currentRoomId = await findOrCreateRoom(currentUserId);
         socket.join(currentRoomId);
@@ -126,9 +155,18 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("searchNewRoom", async () => {
+  socket.on("searchNewRoom", async (data) => {
     if (currentUserId) {
       try {
+        if (data && typeof data.isLoggedIn !== "undefined") {
+          isLoggedIn = data.isLoggedIn;
+          userSockets.set(socket.id, {
+            userId: currentUserId,
+            socketId: socket.id,
+            isLoggedIn,
+          });
+        }
+
         if (currentRoomId) {
           socket.leave(currentRoomId);
         }
@@ -147,10 +185,15 @@ io.on("connection", (socket) => {
           socket.to(currentRoomId).emit("userJoined", {
             userId: currentUserId,
             roomId: currentRoomId,
+            isLoggedIn: isLoggedIn,
           });
+
+          socket.to(currentRoomId).emit("requestAuthStatus");
         }
 
-        console.log(`User ${currentUserId} found new room ${currentRoomId}`);
+        console.log(
+          `User ${currentUserId} found new room ${currentRoomId} with auth status: ${isLoggedIn}`
+        );
       } catch (error) {
         console.error("Error searching new room:", error);
       }

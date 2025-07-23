@@ -4,8 +4,8 @@ interface SystemMessage {
 
 const SystemMsg = ({ message }: SystemMessage) => {
     return (
-    <div className="flex w-full text-center">
-      <div className="w-fit max-w-md break-words py-3 px-5 rounded-xl my-2 text-md">
+    <div className="flex w-full justify-center">
+      <div className="w-full flex justify-center my-0.5 max-w-md break-words  px-5 rounded-xl text-sm">
         {message}
       </div>
     </div>
