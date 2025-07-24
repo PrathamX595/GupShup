@@ -310,62 +310,6 @@ export default function Chat() {
     }
   };
 
-  const handleManualPlay = async () => {
-    if (!remoteVideoRef.current || !incomingStream) {
-      console.log("Missing video element or stream");
-      return;
-    }
-
-    try {
-      console.log("Manual play attempt");
-      const video = remoteVideoRef.current;
-
-      const videoTracks = incomingStream.getVideoTracks();
-      console.log(
-        `Stream has ${videoTracks.length} video tracks and is ${
-          incomingStream.active ? "active" : "inactive"
-        }`
-      );
-
-      if (videoTracks.length > 0) {
-        console.log("Video track state:", videoTracks[0].readyState);
-        videoTracks.forEach((track) => {
-          track.enabled = true;
-        });
-      }
-
-      video.srcObject = incomingStream;
-      video.muted = false;
-
-      await video.play();
-      console.log("Video playing");
-    } catch (error) {
-      console.error(" Play failed:", error);
-
-      try {
-        const video = remoteVideoRef.current;
-        video.muted = true;
-        await video.play();
-        console.log("Video playing muted!");
-
-        setTimeout(() => {
-          if (video) video.muted = false;
-        }, 1000);
-      } catch (mutedError) {
-        console.error("Even muted play failed:", mutedError);
-
-        alert("Click OK to enable video playback");
-        try {
-          if (remoteVideoRef.current) {
-            await remoteVideoRef.current.play();
-          }
-        } catch (finalError) {
-          console.error("All play attempts failed:", finalError);
-        }
-      }
-    }
-  };
-
   useEffect(() => {
     console.log("Initializing socket connection...");
 
@@ -651,16 +595,36 @@ export default function Chat() {
             </div>
             <div className="w-full h-full mx-5 pb-5">
               <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover rounded-md"
-                />
-                <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                  You
-                </div>
+                {isVideoOn ? (
+                  <>
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover rounded-md"
+                    />
+                    <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                      You
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-center items-center">
+                    {user?.avatar ? (
+                      <Image
+                        src={user.avatar}
+                        alt="Profile"
+                        width={70}
+                        height={70}
+                        className="object-cover rounded-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+                        {user?.userName?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative">
@@ -694,7 +658,7 @@ export default function Chat() {
                   </>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-600">
-                    <div className="text-black">
+                    <div className="text-black flex flex-col justify-center items-center">
                       {roomStatus === "searching"
                         ? "Searching for partner..."
                         : connectionState === "connecting"

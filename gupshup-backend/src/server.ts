@@ -155,6 +155,27 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("switchVideo", (data) => {
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("peerVidSwitch", { enabled: data.enabled });
+    }
+  });
+
+  socket.on("switchMic", (data) => {
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("peerMicSwitch", { enabled: data.enabled });
+    }
+  });
+
+  socket.on("mediaState", (data) => {
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("mediaState", {
+        videoEnabled: data.videoEnabled,
+        audioEnabled: data.audioEnabled
+      });
+    }
+  });
+
   socket.on("searchNewRoom", async (data) => {
     if (currentUserId) {
       try {
