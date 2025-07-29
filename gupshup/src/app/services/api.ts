@@ -15,7 +15,6 @@ const authService = {
   googleLogin: () => {
     window.location.href = `${backendUrl}/api/auth/google`;
   },
-  getProfilePic: () => {},
   verifyAuth: async () => {
     try {
       const res = await api.get(`/api/auth/verify`);
@@ -41,17 +40,67 @@ const authService = {
       throw error;
     }
   },
-  login: async(email: string, password: string)=>{
+  login: async (email: string, password: string) => {
     try {
       const res = await api.post(`/api/auth/login`, {
         email,
-        password
-      })
+        password,
+      });
       return res;
     } catch (error) {
       throw error;
     }
-  }
+  },
 };
 
-export { authService };
+const votingService = {
+  addVote: async (userName: string, email: string) => {
+    try {
+      const res = await api.put(`/api/upvote/add`, {
+        userName,
+        email,
+      });
+
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  },
+  updateList: async (userName: string, email: string) => {
+    try {
+      const res = await api.put(`/api/upvote/addInList`, {
+        userName,
+        email,
+      });
+
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  },
+  removeUpvote: async (userName: string, email: string) => {
+    try {
+      const res = await api.put(`/api/upvote/remove`, {
+        userName,
+        email,
+      });
+
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  },
+  removeFromList: async (email: string) => {
+    try {
+      const res = await api.put(`/api/upvote/removeFromList`, {
+        email,
+      });
+
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+export { authService, votingService };

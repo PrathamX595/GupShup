@@ -21,7 +21,7 @@ router.route("/remove").put((req, res, next) => {
   removeUpvote(req, res).catch(next);
 });
 
-router.route("/remove").put((req, res, next) => {
+router.route("/removeFromList").put((req, res, next) => {
   removeFromUpvoteList(req, res).catch(next);
 });
 
