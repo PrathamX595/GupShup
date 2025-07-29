@@ -4,6 +4,7 @@ import cors from "cors";
 import connectDB from "./config/db";
 import healthCheckRouter from "../src/routes/healthCheck.route";
 import authRouter from "../src/routes/auth.route";
+import voteRouter from "../src/routes/upvote.route";
 import passport from "passport";
 import passportConfig from "./config/passport";
 import session from "express-session";
@@ -261,6 +262,7 @@ app.get("/", (request: Request, response: Response) => {
 
 app.use("/api/healthCheck", healthCheckRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/upvote", voteRouter);
 
 redis.connect().catch(console.error);
 
