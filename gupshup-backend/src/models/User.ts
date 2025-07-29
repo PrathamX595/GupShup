@@ -11,6 +11,8 @@ interface IUser extends Document {
   createdAt: Date;
   password: string;
   refreshToken: string;
+  upvotesGiven: string[];
+  upvotes: number;
 
   isPasswordCorrect(password: string): Promise<boolean>;
   generateAccessToken(): string;
@@ -32,6 +34,13 @@ const UserSchema: Schema<IUser> = new Schema({
   avatar: { type: String },
   createdAt: { type: Date, default: Date.now },
   refreshToken: { type: String },
+  upvotesGiven: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  upvotes: { type: Number, default: 0 },
 });
 
 UserSchema.pre("save", async function (next) {

@@ -28,6 +28,114 @@ const generateAccessAndRefreshToken = async (userId: string) => {
   }
 };
 
+const addUpvote = async (req: Request, res: Response) => {
+  const { userName, email } = req.body;
+  if (!userName || !email) {
+    throw new ErrorResponse(400, "email or username missing");
+  }
+  const user = await User.findByIdAndUpdate(
+    (req.user as IUser)?._id,
+    {
+      $set: {
+        upvotes: (req.user as IUser)?.upvotes + 1,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ErrorResponse(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "detailes updated successfully"));
+};
+
+const removeUpvote = async (req: Request, res: Response) => {
+  const { userName, email } = req.body;
+  if (!userName || !email) {
+    throw new ErrorResponse(400, "email or username missing");
+  }
+  const user = await User.findByIdAndUpdate(
+    (req.user as IUser)?._id,
+    {
+      $set: {
+        upvotes: (req.user as IUser)?.upvotes - 1,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ErrorResponse(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "detailes updated successfully"));
+};
+
+const updateUpvoteList = async (req: Request, res: Response) => {
+  const { userName, email } = req.body;
+  if (!userName || !email) {
+    throw new ErrorResponse(400, "email or username missing");
+  }
+
+  const userToUpvote = await User.findOne({ email }).select("_id userName email");
+  if (!userToUpvote) {
+    throw new ErrorResponse(404, "User to upvote not found");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    (req.user as IUser)?._id,
+    {
+      $addToSet: {
+        upvotesGiven: userToUpvote._id,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ErrorResponse(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "upvote list updated successfully"));
+};
+
+const removeFromUpvoteList = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    throw new ErrorResponse(400, "email missing");
+  }
+
+  const userToRemove = await User.findOne({ email }).select("_id");
+  if (!userToRemove) {
+    throw new ErrorResponse(404, "User not found");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    (req.user as IUser)?._id,
+    {
+      $pull: {
+        upvotesGiven: userToRemove._id,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ErrorResponse(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "removed from upvote list successfully"));
+};
+
 const refreshAccessToken = async (req: Request, res: Response) => {
   const incommingRefreshToken =
     req.body.refreshToken || req.cookies.refreshToken;
@@ -343,6 +451,10 @@ const verifyUser = async (req: Request, res: Response) => {
 
 export {
   generateAccessAndRefreshToken,
+  addUpvote,
+  removeUpvote,
+  removeFromUpvoteList,
+  updateUpvoteList,
   refreshAccessToken,
   login,
   logout,
