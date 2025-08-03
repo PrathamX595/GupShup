@@ -25,7 +25,6 @@ interface Imessages {
 export default function Chat() {
   const router = useRouter();
   const { user } = useAuth();
-  const [peerAvatar, setPeerAvatar] = useState<string>("");
   const [selfMessage, setSelfMessage] = useState<string>("");
   const [messages, setMessages] = useState<Imessages[]>([]);
   const [roomStatus, setRoomStatus] = useState<string>("searching");
@@ -57,23 +56,14 @@ export default function Chat() {
   };
 
   const handleMicToggle = () => {
-    console.log("🎤 MIC TOGGLE CLICKED - Before:", {
-      isMicOn,
-      hasStream: !!streamRef.current,
-    });
 
     if (streamRef.current) {
       const audioTracks = streamRef.current.getAudioTracks();
-      console.log("🎤 Found audio tracks:", audioTracks.length);
-
       audioTracks.forEach((track, i) => {
-        console.log(`🎤 Track ${i} before: enabled=${track.enabled}`);
         track.enabled = !track.enabled;
-        console.log(`🎤 Track ${i} after: enabled=${track.enabled}`);
       });
 
       const newState = !isMicOn;
-      console.log("🎤 Setting isMicOn:", isMicOn, "->", newState);
       setIsMicOn(newState);
 
       const systemMsg: Imessages = {
@@ -82,33 +72,22 @@ export default function Chat() {
       };
       setMessages((prev) => [...prev, systemMsg]);
 
-      console.log("🎤 Emitting micToggled with data:", {
-        isRemotePeerMicOn: newState,
-      });
       socket.emit("micToggled", { isRemotePeerMicOn: newState });
     } else {
-      console.error("🎤 ERROR: No stream available!");
+      console.error("ERROR: No stream available!");
     }
   };
 
   const handleVideoToggle = () => {
-    console.log("📹 VIDEO TOGGLE CLICKED - Before:", {
-      isVideoOn,
-      hasStream: !!streamRef.current,
-    });
 
     if (streamRef.current) {
       const videoTracks = streamRef.current.getVideoTracks();
-      console.log("📹 Found video tracks:", videoTracks.length);
 
       videoTracks.forEach((track, i) => {
-        console.log(`📹 Track ${i} before: enabled=${track.enabled}`);
         track.enabled = !track.enabled;
-        console.log(`📹 Track ${i} after: enabled=${track.enabled}`);
       });
 
       const newState = !isVideoOn;
-      console.log("📹 Setting isVideoOn:", isVideoOn, "->", newState);
       setIsVideoOn(newState);
 
       const systemMsg: Imessages = {
@@ -123,55 +102,36 @@ export default function Chat() {
         }
       }
 
-      console.log("📹 Emitting vidToggled with data:", {
-        isRemotePeerVideoOn: newState,
-      });
       socket.emit("vidToggled", { isRemotePeerVideoOn: newState });
     } else {
-      console.error("📹 ERROR: No stream available!");
+      console.error("ERROR: No stream available!");
     }
   };
 
   const handlePeerVidToggle = (data: any) => {
-    console.log("👥📹 PEER VIDEO TOGGLE - Received data:", data);
     if (!data) {
-      console.error("👥📹 No data received for peer video toggle");
+      console.error("No data received for peer video toggle");
       return;
     }
 
     const { isRemotePeerVideoOn } = data;
-    console.log(
-      "👥📹 PEER VIDEO TOGGLE - Before:",
-      isPeerVideoOn,
-      "Setting to:",
-      isRemotePeerVideoOn
-    );
     setIsPeerVideoOn(isRemotePeerVideoOn);
   };
 
   const handlePeerMicToggle = (data: any) => {
-    console.log("👥🎤 PEER MIC TOGGLE - Received data:", data);
     if (!data) {
-      console.error("👥🎤 No data received for peer mic toggle");
+      console.error("No data received for peer mic toggle");
       return;
     }
     const { isRemotePeerMicOn } = data;
-    console.log(
-      "👥🎤 PEER MIC TOGGLE - Before:",
-      isPeerMicOn,
-      "Setting to:",
-      isRemotePeerMicOn
-    );
     setIsPeerMicOn(isRemotePeerMicOn);
   };
 
   useEffect(() => {
-    console.log("🔄 Stream ref updated:", !!stream);
     streamRef.current = stream;
   }, [stream]);
 
   useEffect(() => {
-    console.log("🔄 Peer ref updated:", !!peer);
     peerRef.current = peer;
   }, [peer]);
 
@@ -180,51 +140,29 @@ export default function Chat() {
   }, [user]);
 
   useEffect(() => {
-    console.log("📹 LOCAL VIDEO EFFECT:", {
-      hasRef: !!localVideoRef.current,
-      hasStream: !!stream,
-      isVideoOn,
-      isMicOn,
-    });
 
     if (localVideoRef.current && stream) {
       localVideoRef.current.srcObject = stream;
-      console.log("Local video source updated");
       const videoTracks = stream.getVideoTracks();
       const audioTracks = stream.getAudioTracks();
 
       videoTracks.forEach((track, i) => {
-        console.log(`📹 Setting video track ${i} enabled:`, isVideoOn);
         track.enabled = isVideoOn;
       });
 
       audioTracks.forEach((track, i) => {
-        console.log(`🎤 Setting audio track ${i} enabled:`, isMicOn);
         track.enabled = isMicOn;
       });
     }
   }, [stream, isVideoOn, isMicOn]);
 
   useEffect(() => {
-    console.log("📹 REMOTE VIDEO EFFECT:", {
-      hasRef: !!remoteVideoRef.current,
-      hasIncomingStream: !!incomingStream,
-      isPeerVideoOn,
-    });
 
     if (remoteVideoRef.current && incomingStream) {
-      console.log("Setting remote stream directly");
       remoteVideoRef.current.srcObject = incomingStream;
 
       const videoTracks = incomingStream.getVideoTracks();
       const audioTracks = incomingStream.getAudioTracks();
-      
-      console.log("📹 Incoming stream analysis:", {
-        videoTracksCount: videoTracks.length,
-        audioTracksCount: audioTracks.length,
-        streamActive: incomingStream.active,
-        streamId: incomingStream.id
-      });
 
       setHasVideo(videoTracks.length > 0);
 
@@ -241,10 +179,8 @@ export default function Chat() {
         });
       }
 
-      // Force video to play
       const videoElement = remoteVideoRef.current;
       videoElement.onloadedmetadata = () => {
-        console.log("📹 Remote video metadata loaded, attempting to play");
         videoElement.play().then(() => {
           console.log("Remote video playing successfully");
         }).catch((error) => {
@@ -252,7 +188,6 @@ export default function Chat() {
         });
       };
 
-      // Add comprehensive event listeners
       videoElement.oncanplay = () => console.log("Remote video can play");
       videoElement.onplaying = () => console.log("Remote video is playing");
       videoElement.onpause = () => console.log("Remote video paused");
@@ -264,7 +199,6 @@ export default function Chat() {
 
   useEffect(() => {
     if (peer && iceCandidates.length > 0) {
-      console.log(`Adding ${iceCandidates.length} stored ICE candidates`);
       iceCandidates.forEach(async (candidate) => {
         try {
           await peer.addIceCandidate(candidate);
@@ -292,7 +226,6 @@ export default function Chat() {
     });
 
     newPeer.onconnectionstatechange = () => {
-      console.log("Peer connection state:", newPeer.connectionState);
       setConnectionState(newPeer.connectionState);
 
       if (newPeer.connectionState === "failed") {
@@ -301,7 +234,6 @@ export default function Chat() {
     };
 
     newPeer.oniceconnectionstatechange = () => {
-      console.log("ICE connection state:", newPeer.iceConnectionState);
 
       if (newPeer.iceConnectionState === "failed") {
         console.log("ICE connection failed - video won't display");
@@ -310,23 +242,11 @@ export default function Chat() {
 
     newPeer.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log(
-          "Generated ICE candidate:",
-          event.candidate.candidate.substring(0, 50) + "..."
-        );
         socket.emit("ice-candidate", { candidate: event.candidate });
       }
     };
 
     newPeer.ontrack = (e) => {
-      console.log("RECEIVED REMOTE TRACK:", e.track.kind);
-      console.log("Track details:", {
-        id: e.track.id,
-        kind: e.track.kind,
-        readyState: e.track.readyState,
-        enabled: e.track.enabled,
-        muted: e.track.muted,
-      });
 
       if (e.streams && e.streams[0]) {
         const stream = e.streams[0];
@@ -346,7 +266,6 @@ export default function Chat() {
   }, []);
 
   const sendCallReq = async () => {
-
     try {
       const newPeer = createPeerConnection();
       setPeer(newPeer);
@@ -355,6 +274,9 @@ export default function Chat() {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => {
           newPeer.addTrack(track, streamRef.current!);
+          console.log(
+            `Added ${track.kind} track to peer connection (enabled: ${track.enabled})`
+          );
         });
       } else {
         console.error("No local stream available to send");
@@ -383,7 +305,6 @@ export default function Chat() {
   };
 
   const handleNextRoom = () => {
-
     if (peerRef.current) {
       peerRef.current.close();
       setPeer(undefined);
@@ -409,8 +330,19 @@ export default function Chat() {
           frameRate: { ideal: 30 },
         },
       });
+      
+      mediaStream.getAudioTracks().forEach(track => {
+        track.enabled = false;
+        console.log("Audio track disabled by default for privacy");
+      });
+      
+      mediaStream.getVideoTracks().forEach(track => {
+        track.enabled = false;
+        console.log("Video track disabled by default for privacy");
+      });
+      
       setStream(mediaStream);
-      console.log("Got user media with ideal constraints");
+      console.log("Got user media with ideal constraints - tracks disabled by default");
     } catch (error) {
       console.error("Error with ideal constraints:", error);
 
@@ -419,8 +351,19 @@ export default function Chat() {
           audio: true,
           video: true,
         });
+        
+        mediaStream.getAudioTracks().forEach(track => {
+          track.enabled = false;
+          console.log("Audio track disabled by default for privacy");
+        });
+        
+        mediaStream.getVideoTracks().forEach(track => {
+          track.enabled = false;
+          console.log("Video track disabled by default for privacy");
+        });
+        
         setStream(mediaStream);
-        console.log("Got user media with minimal constraints");
+        console.log("Got user media with minimal constraints - tracks disabled by default");
       } catch (minimalError) {
         console.error("Error with minimal constraints:", minimalError);
 
@@ -429,8 +372,14 @@ export default function Chat() {
             audio: true,
             video: false,
           });
+          
+          audioOnlyStream.getAudioTracks().forEach(track => {
+            track.enabled = false;
+            console.log("Audio track disabled by default for privacy");
+          });
+          
           setStream(audioOnlyStream);
-          console.log("Fallback to audio only");
+          console.log("Fallback to audio only - tracks disabled by default");
         } catch (audioError) {
           console.error("Complete media access failure:", audioError);
         }
@@ -498,6 +447,9 @@ export default function Chat() {
 
         streamRef.current.getTracks().forEach((track) => {
           newPeer.addTrack(track, streamRef.current!);
+          console.log(
+            `Added ${track.kind} track for answer (enabled: ${track.enabled})`
+          );
         });
 
         await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
@@ -531,7 +483,7 @@ export default function Chat() {
 
     const handleIceCandidate = async (data: any) => {
       const { candidate, from } = data;
-      console.log(" Received ICE candidate from peer");
+      console.log("Received ICE candidate from peer");
 
       if (peerRef.current && peerRef.current.remoteDescription) {
         try {
@@ -553,7 +505,6 @@ export default function Chat() {
       setMessages([]);
       setRoomStatus("active");
       setIsOtherUserLoggedIn(data.isLoggedIn || false);
-      setPeerAvatar(data.userAvatar);
 
       setIsPeerMicOn(false);
       setIsPeerVideoOn(false);
@@ -673,9 +624,10 @@ export default function Chat() {
       }
     };
   }, [createPeerConnection]);
+  
   useEffect(() => {
     if (roomStatus === "active") {
-      console.log("📹 Media states changed, sending to peer:", { 
+      console.log("Media states changed, sending to peer:", { 
         isVideoOn, 
         isMicOn 
       });
@@ -702,22 +654,21 @@ export default function Chat() {
                 <div className="flex gap-1 items-center">
                   <div className="text-xl">Chatroom</div>
                   <div className="text-[#5A5A5A] text-sm">
-                    {isSocketConnected ? "🟢 Connected" : "🔴 Disconnected"}
+                    {isSocketConnected ? "Connected" : "Disconnected"}
                   </div>
                 </div>
-                {/* DEBUG INFO */}
                 <div className="text-xs text-gray-500 mt-2 max-w-48 bg-gray-100 p-2 rounded">
                   <div className="font-bold">Debug:</div>
                   <div>
-                    My: 📹{isVideoOn ? "✅" : "❌"} 🎤{isMicOn ? "✅" : "❌"}
+                    My: Video{isVideoOn ? "ON" : "OFF"} Mic{isMicOn ? "ON" : "OFF"}
                   </div>
                   <div>
-                    Peer: 📹{isPeerVideoOn ? "✅" : "❌"} 🎤
-                    {isPeerMicOn ? "✅" : "❌"}
+                    Peer: Video{isPeerVideoOn ? "ON" : "OFF"} Mic
+                    {isPeerMicOn ? "ON" : "OFF"}
                   </div>
                   <div>Room: {roomStatus}</div>
                   <div>Conn: {connectionState}</div>
-                  <div>Stream: {incomingStream ? "✅" : "❌"}</div>
+                  <div>Stream: {incomingStream ? "YES" : "NO"}</div>
                 </div>
               </div>
 
@@ -844,12 +795,12 @@ export default function Chat() {
                       }}
                     />
                     <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                      Stranger {isPeerVideoOn ? '📹' : '📹❌'}
+                      Stranger {isPeerVideoOn ? 'Video' : 'Video OFF'}
                     </div>
                     {!isPeerVideoOn && (
                       <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 text-white rounded-md">
                         <div className="text-center">
-                          <div className="text-2xl mb-2">📹❌</div>
+                          <div className="text-2xl mb-2">Video OFF</div>
                           <div>Camera Off</div>
                         </div>
                       </div>

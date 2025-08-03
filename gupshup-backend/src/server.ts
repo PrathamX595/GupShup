@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
 
   socket.on("findRoom", async (data) => {
     try {
-      const { userId, isLoggedIn: userLoggedIn, userAvatar } = data;
+      const { userId, isLoggedIn: userLoggedIn } = data;
       currentUserId = userId;
       isLoggedIn = userLoggedIn || false;
       userSockets.set(socket.id, { userId, socketId: socket.id, isLoggedIn });
@@ -51,7 +51,6 @@ io.on("connection", (socket) => {
       socket.emit("roomAssigned", {
         roomId: currentRoomId,
         members: roomInfo.members,
-        userAvatar: userAvatar,
         status: roomInfo.status,
       });
 
@@ -59,7 +58,6 @@ io.on("connection", (socket) => {
         socket.to(currentRoomId).emit("userJoined", {
           userId,
           roomId: currentRoomId,
-          userAvatar: userAvatar,
           isLoggedIn: isLoggedIn,
         });
 
