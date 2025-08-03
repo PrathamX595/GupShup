@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
 
   socket.on("findRoom", async (data) => {
     try {
-      const { userId, isLoggedIn: userLoggedIn } = data;
+      const { userId, isLoggedIn: userLoggedIn, userAvatar } = data;
       currentUserId = userId;
       isLoggedIn = userLoggedIn || false;
       userSockets.set(socket.id, { userId, socketId: socket.id, isLoggedIn });
@@ -51,6 +51,7 @@ io.on("connection", (socket) => {
       socket.emit("roomAssigned", {
         roomId: currentRoomId,
         members: roomInfo.members,
+        userAvatar: userAvatar,
         status: roomInfo.status,
       });
 
@@ -58,6 +59,7 @@ io.on("connection", (socket) => {
         socket.to(currentRoomId).emit("userJoined", {
           userId,
           roomId: currentRoomId,
+          userAvatar: userAvatar,
           isLoggedIn: isLoggedIn,
         });
 
@@ -156,6 +158,28 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("micToggled", (data) => {
+    console.log("SERVER: Received micToggled event with data:", data);
+    
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("peerMicToggled", data);
+      console.log("SERVER: Forwarded peerMicToggled to room:", currentRoomId);
+    } else {
+      console.log("SERVER: No current room to forward mic toggle");
+    }
+  });
+
+  socket.on("vidToggled", (data) => {
+    console.log("SERVER: Received vidToggled event with data:", data);
+    
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("peerVidToggled", data);
+      console.log("SERVER: Forwarded peerVidToggled to room:", currentRoomId);
+    } else {
+      console.log("SERVER: No current room to forward video toggle");
+    }
+  });
+
   socket.on("searchNewRoom", async (data) => {
     if (currentUserId) {
       try {
@@ -230,7 +254,7 @@ io.on("connection", (socket) => {
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true, // Important for cookies
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
