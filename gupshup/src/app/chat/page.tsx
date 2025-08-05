@@ -15,7 +15,7 @@ import {
   FaMicrophone,
   FaMicrophoneSlash,
 } from "react-icons/fa";
-import { IoMdPersonAdd } from "react-icons/io";
+import { BiUpvote, BiSolidUpvote } from "react-icons/bi";
 
 interface Imessages {
   message: string;
@@ -56,7 +56,6 @@ export default function Chat() {
   };
 
   const handleMicToggle = () => {
-
     if (streamRef.current) {
       const audioTracks = streamRef.current.getAudioTracks();
       audioTracks.forEach((track, i) => {
@@ -79,7 +78,6 @@ export default function Chat() {
   };
 
   const handleVideoToggle = () => {
-
     if (streamRef.current) {
       const videoTracks = streamRef.current.getVideoTracks();
 
@@ -140,7 +138,6 @@ export default function Chat() {
   }, [user]);
 
   useEffect(() => {
-
     if (localVideoRef.current && stream) {
       localVideoRef.current.srcObject = stream;
       const videoTracks = stream.getVideoTracks();
@@ -157,7 +154,6 @@ export default function Chat() {
   }, [stream, isVideoOn, isMicOn]);
 
   useEffect(() => {
-
     if (remoteVideoRef.current && incomingStream) {
       remoteVideoRef.current.srcObject = incomingStream;
 
@@ -174,18 +170,21 @@ export default function Chat() {
             readyState: track.readyState,
             muted: track.muted,
             id: track.id,
-            kind: track.kind
+            kind: track.kind,
           });
         });
       }
 
       const videoElement = remoteVideoRef.current;
       videoElement.onloadedmetadata = () => {
-        videoElement.play().then(() => {
-          console.log("Remote video playing successfully");
-        }).catch((error) => {
-          console.error("Remote video failed to play:", error);
-        });
+        videoElement
+          .play()
+          .then(() => {
+            console.log("Remote video playing successfully");
+          })
+          .catch((error) => {
+            console.error("Remote video failed to play:", error);
+          });
       };
 
       videoElement.oncanplay = () => console.log("Remote video can play");
@@ -234,7 +233,6 @@ export default function Chat() {
     };
 
     newPeer.oniceconnectionstatechange = () => {
-
       if (newPeer.iceConnectionState === "failed") {
         console.log("ICE connection failed - video won't display");
       }
@@ -247,7 +245,6 @@ export default function Chat() {
     };
 
     newPeer.ontrack = (e) => {
-
       if (e.streams && e.streams[0]) {
         const stream = e.streams[0];
         console.log("Stream details:", {
@@ -330,19 +327,21 @@ export default function Chat() {
           frameRate: { ideal: 30 },
         },
       });
-      
-      mediaStream.getAudioTracks().forEach(track => {
+
+      mediaStream.getAudioTracks().forEach((track) => {
         track.enabled = false;
         console.log("Audio track disabled by default for privacy");
       });
-      
-      mediaStream.getVideoTracks().forEach(track => {
+
+      mediaStream.getVideoTracks().forEach((track) => {
         track.enabled = false;
         console.log("Video track disabled by default for privacy");
       });
-      
+
       setStream(mediaStream);
-      console.log("Got user media with ideal constraints - tracks disabled by default");
+      console.log(
+        "Got user media with ideal constraints - tracks disabled by default"
+      );
     } catch (error) {
       console.error("Error with ideal constraints:", error);
 
@@ -351,19 +350,21 @@ export default function Chat() {
           audio: true,
           video: true,
         });
-        
-        mediaStream.getAudioTracks().forEach(track => {
+
+        mediaStream.getAudioTracks().forEach((track) => {
           track.enabled = false;
           console.log("Audio track disabled by default for privacy");
         });
-        
-        mediaStream.getVideoTracks().forEach(track => {
+
+        mediaStream.getVideoTracks().forEach((track) => {
           track.enabled = false;
           console.log("Video track disabled by default for privacy");
         });
-        
+
         setStream(mediaStream);
-        console.log("Got user media with minimal constraints - tracks disabled by default");
+        console.log(
+          "Got user media with minimal constraints - tracks disabled by default"
+        );
       } catch (minimalError) {
         console.error("Error with minimal constraints:", minimalError);
 
@@ -372,12 +373,12 @@ export default function Chat() {
             audio: true,
             video: false,
           });
-          
-          audioOnlyStream.getAudioTracks().forEach(track => {
+
+          audioOnlyStream.getAudioTracks().forEach((track) => {
             track.enabled = false;
             console.log("Audio track disabled by default for privacy");
           });
-          
+
           setStream(audioOnlyStream);
           console.log("Fallback to audio only - tracks disabled by default");
         } catch (audioError) {
@@ -515,9 +516,9 @@ export default function Chat() {
       });
 
       setTimeout(() => {
-        console.log("Sending current media states to new user:", { 
-          myVideo: isVideoOn, 
-          myMic: isMicOn 
+        console.log("Sending current media states to new user:", {
+          myVideo: isVideoOn,
+          myMic: isMicOn,
         });
         socket.emit("vidToggled", { isRemotePeerVideoOn: isVideoOn });
         socket.emit("micToggled", { isRemotePeerMicOn: isMicOn });
@@ -624,12 +625,12 @@ export default function Chat() {
       }
     };
   }, [createPeerConnection]);
-  
+
   useEffect(() => {
     if (roomStatus === "active") {
-      console.log("Media states changed, sending to peer:", { 
-        isVideoOn, 
-        isMicOn 
+      console.log("Media states changed, sending to peer:", {
+        isVideoOn,
+        isMicOn,
       });
       socket.emit("vidToggled", { isRemotePeerVideoOn: isVideoOn });
       socket.emit("micToggled", { isRemotePeerMicOn: isMicOn });
@@ -660,7 +661,8 @@ export default function Chat() {
                 <div className="text-xs text-gray-500 mt-2 max-w-48 bg-gray-100 p-2 rounded">
                   <div className="font-bold">Debug:</div>
                   <div>
-                    My: Video{isVideoOn ? "ON" : "OFF"} Mic{isMicOn ? "ON" : "OFF"}
+                    My: Video{isVideoOn ? "ON" : "OFF"} Mic
+                    {isMicOn ? "ON" : "OFF"}
                   </div>
                   <div>
                     Peer: Video{isPeerVideoOn ? "ON" : "OFF"} Mic
@@ -676,9 +678,9 @@ export default function Chat() {
                 <div>
                   {areBothUsersLoggedIn() ? (
                     <div className="flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors">
-                      Add friend
+                      upvote
                       <div>
-                        <IoMdPersonAdd size={20} />
+                        <BiUpvote size={20} />
                       </div>
                     </div>
                   ) : (
@@ -775,7 +777,7 @@ export default function Chat() {
                       autoPlay
                       playsInline
                       className={`w-full h-full object-cover rounded-md bg-black ${
-                        isPeerVideoOn ? 'opacity-100' : 'opacity-0'
+                        isPeerVideoOn ? "opacity-100" : "opacity-0"
                       }`}
                       onLoadedMetadata={() => {
                         if (remoteVideoRef.current) {
@@ -795,13 +797,18 @@ export default function Chat() {
                       }}
                     />
                     <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                      Stranger {isPeerVideoOn ? 'Video' : 'Video OFF'}
+                      Stranger {isPeerVideoOn ? "Video" : "Video OFF"}
                     </div>
                     {!isPeerVideoOn && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 text-white rounded-md">
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#FDC62E] text-black rounded-md">
                         <div className="text-center">
-                          <div className="text-2xl mb-2">Video OFF</div>
-                          <div>Camera Off</div>
+                          <Image
+                            src={"./gupshupLogo.svg"}
+                            alt="Profile"
+                            width={70}
+                            height={70}
+                            className="object-cover bg-white rounded-full"
+                          />
                         </div>
                       </div>
                     )}
