@@ -6,6 +6,7 @@ import {
   updateUpvoteList,
   removeFromUpvoteList,
   removeUpvote,
+  checkUpvoteStatus,
 } from "../controllers/user.controller";
 
 const router = Router();
@@ -24,6 +25,10 @@ router.route("/remove").put(verifyJWT, (req, res, next) => {
 
 router.route("/removeFromList").put(verifyJWT, (req, res, next) => {
   removeFromUpvoteList(req, res).catch(next);
+});
+
+router.route("/status").get(verifyJWT, (req, res, next) => {
+  checkUpvoteStatus(req, res).catch(next);
 });
 
 export default router;

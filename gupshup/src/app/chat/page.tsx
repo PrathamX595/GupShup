@@ -65,58 +65,110 @@ export default function Chat() {
   const areBothUsersLoggedIn = () => {
     return user && isOtherUserLoggedIn;
   };
-const handleUpvote = async () => {
-  if (!user || !peerInfo || isUpvoting || hasUpvoted) return;
+  const handleUpvote = async () => {
+    if (!user || !peerInfo || isUpvoting || hasUpvoted) return;
 
-  console.log("Starting upvote process for:", peerInfo.userName);
-  setIsUpvoting(true);
-  
-  try {
-    // Add upvote to peer
-    console.log("Step 1: Adding upvote to peer");
-    await votingService.addVote(peerInfo.userName, peerInfo.email);
-    
-    // Update upvote list
-    console.log("Step 2: Updating upvote list");
-    await votingService.updateList(peerInfo.userName, peerInfo.email);
-    
-    setHasUpvoted(true);
-    setPeerInfo(prev => prev ? { ...prev, upvotes: prev.upvotes + 1 } : null);
-    
-    // Send upvote notification to peer
-    socket.emit("upvoteGiven", {
-      fromUser: user.userName,
-      toUser: peerInfo.userName,
-    });
+    console.log("Starting upvote process for:", peerInfo.userName);
+    setIsUpvoting(true);
 
-    const systemMsg: Imessages = {
-      message: `You upvoted ${peerInfo.userName}`,
-      type: "system",
-    };
-    setMessages((prev) => [...prev, systemMsg]);
+    try {
+      console.log("Step 1: Adding upvote to peer");
+      await votingService.addVote(peerInfo.userName, peerInfo.email);
 
-  } catch (error: any) {
-    console.error("Upvote error:", error);
-    
-    let errorMessage = "Failed to upvote. Please try again.";
-    
-    if (error.response?.status === 401) {
-      errorMessage = "Please log in again to upvote.";
-    } else if (error.response?.status === 400) {
-      errorMessage = error.response.data?.message || "Invalid upvote request.";
-    } else if (error.response?.status === 404) {
-      errorMessage = "User not found.";
+      console.log("Step 2: Updating upvote list");
+      await votingService.updateList(peerInfo.userName, peerInfo.email);
+
+      setHasUpvoted(true);
+      setPeerInfo((prev) =>
+        prev ? { ...prev, upvotes: prev.upvotes + 1 } : null
+      );
+
+      socket.emit("upvoteGiven", {
+        fromUser: user.userName,
+        toUser: peerInfo.userName,
+        newUpvoteCount: peerInfo.upvotes + 1,
+      });
+
+      const systemMsg: Imessages = {
+        message: `You upvoted ${peerInfo.userName}`,
+        type: "system",
+      };
+      setMessages((prev) => [...prev, systemMsg]);
+    } catch (error: any) {
+      console.error("Upvote error:", error);
+
+      let errorMessage = "Failed to upvote. Please try again.";
+
+      if (error.response?.status === 401) {
+        errorMessage = "Please log in again to upvote.";
+      } else if (error.response?.status === 400) {
+        errorMessage =
+          error.response.data?.message || "Invalid upvote request.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "User not found.";
+      }
+
+      const errorMsg: Imessages = {
+        message: errorMessage,
+        type: "system",
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsUpvoting(false);
     }
-    
-    const errorMsg: Imessages = {
-      message: errorMessage,
-      type: "system",
-    };
-    setMessages((prev) => [...prev, errorMsg]);
-  } finally {
-    setIsUpvoting(false);
-  }
-};
+  };
+
+  const handleRemoveUpvote = async () => {
+    if (!user || !peerInfo || isUpvoting || !hasUpvoted) return;
+
+    console.log("Starting remove upvote process for:", peerInfo.userName);
+    setIsUpvoting(true);
+
+    try {
+      console.log("Step 1: Removing upvote from peer");
+      await votingService.removeUpvote(peerInfo.userName, peerInfo.email);
+
+      console.log("Step 2: Removing from upvote list");
+      await votingService.removeFromList(peerInfo.email);
+
+      setHasUpvoted(false);
+      setPeerInfo((prev) =>
+        prev ? { ...prev, upvotes: Math.max(0, prev.upvotes - 1) } : null
+      );
+
+      socket.emit("upvoteRemoved", {
+        fromUser: user.userName,
+        toUser: peerInfo.userName,
+        newUpvoteCount: Math.max(0, peerInfo.upvotes - 1),
+      });
+
+      const systemMsg: Imessages = {
+        message: `You removed upvote from ${peerInfo.userName}`,
+        type: "system",
+      };
+      setMessages((prev) => [...prev, systemMsg]);
+    } catch (error: any) {
+      console.error("Remove upvote error:", error);
+
+      let errorMessage = "Failed to remove upvote. Please try again.";
+
+      if (error.response?.status === 401) {
+        errorMessage = "Please log in again to remove upvote.";
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || "Invalid request.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "User not found.";
+      }
+
+      const errorMsg: Imessages = {
+        message: errorMessage,
+        type: "system",
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsUpvoting(false);
+    }
+  };
 
   const handleMicToggle = () => {
     if (streamRef.current) {
@@ -380,7 +432,7 @@ const handleUpvote = async () => {
     setPeerInfo(null);
     setHasUpvoted(false);
     setIsUpvoting(false);
-    
+
     socket.emit("leaveRoom");
   };
 
@@ -456,6 +508,24 @@ const handleUpvote = async () => {
   };
 
   useEffect(() => {
+    const checkUpvoteStatus = async () => {
+      if (user && peerInfo && peerInfo.email) {
+        try {
+          const response = await votingService.checkUpvoteStatus(
+            peerInfo.email
+          );
+          setHasUpvoted(response.data.data.hasUpvoted);
+        } catch (error) {
+          console.error("Error checking upvote status:", error);
+          setHasUpvoted(false);
+        }
+      }
+    };
+
+    checkUpvoteStatus();
+  }, [peerInfo, user]);
+
+  useEffect(() => {
     console.log("Initializing socket connection...");
 
     if (!socket.connected) {
@@ -503,96 +573,102 @@ const handleUpvote = async () => {
     };
 
     const handleGotReq = async (data: any) => {
-  const { socketId, offer } = data;
-  console.log("Got call request from:", socketId);
+      const { socketId, offer } = data;
+      console.log("Got call request from:", socketId);
 
-  if (!streamRef.current) {
-    console.error("No local stream available");
-    return;
-  }
-
-  try {
-    const newPeer = createPeerConnection();
-    setPeer(newPeer);
-    peerRef.current = newPeer;
-
-    streamRef.current.getTracks().forEach((track) => {
-      newPeer.addTrack(track, streamRef.current!);
-      console.log(
-        `Added ${track.kind} track for answer (enabled: ${track.enabled})`
-      );
-    });
-
-    await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
-    console.log("Remote description set for incoming call");
-
-    const answer = await newPeer.createAnswer();
-    await newPeer.setLocalDescription(answer);
-
-    socket.emit("call-accepted", { socketId, answer });
-    if (iceCandidates.length > 0) {
-      console.log(`Adding ${iceCandidates.length} stored ICE candidates after setting remote description`);
-      for (const candidate of iceCandidates) {
-        try {
-          await newPeer.addIceCandidate(candidate);
-          console.log("Stored ICE candidate added successfully");
-        } catch (err) {
-          console.error("Error adding stored ICE candidate:", err);
-        }
+      if (!streamRef.current) {
+        console.error("No local stream available");
+        return;
       }
-      setIceCandidates([]);
-    }
-  } catch (error) {
-    console.error("Error handling call request:", error);
-  }
-};
+
+      try {
+        const newPeer = createPeerConnection();
+        setPeer(newPeer);
+        peerRef.current = newPeer;
+
+        streamRef.current.getTracks().forEach((track) => {
+          newPeer.addTrack(track, streamRef.current!);
+          console.log(
+            `Added ${track.kind} track for answer (enabled: ${track.enabled})`
+          );
+        });
+
+        await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log("Remote description set for incoming call");
+
+        const answer = await newPeer.createAnswer();
+        await newPeer.setLocalDescription(answer);
+
+        socket.emit("call-accepted", { socketId, answer });
+        if (iceCandidates.length > 0) {
+          console.log(
+            `Adding ${iceCandidates.length} stored ICE candidates after setting remote description`
+          );
+          for (const candidate of iceCandidates) {
+            try {
+              await newPeer.addIceCandidate(candidate);
+              console.log("Stored ICE candidate added successfully");
+            } catch (err) {
+              console.error("Error adding stored ICE candidate:", err);
+            }
+          }
+          setIceCandidates([]);
+        }
+      } catch (error) {
+        console.error("Error handling call request:", error);
+      }
+    };
 
     const handleCallAccepted = async (data: any) => {
-  const { answer } = data;
-  console.log("Call accepted, setting remote description");
+      const { answer } = data;
+      console.log("Call accepted, setting remote description");
 
-  try {
-    if (peerRef.current) {
-      await peerRef.current.setRemoteDescription(
-        new RTCSessionDescription(answer)
-      );
-      console.log("Remote description set successfully");
-      if (iceCandidates.length > 0) {
-        console.log(`Adding ${iceCandidates.length} stored ICE candidates after remote description`);
-        for (const candidate of iceCandidates) {
-          try {
-            await peerRef.current.addIceCandidate(candidate);
-            console.log("Stored ICE candidate added successfully");
-          } catch (err) {
-            console.error("Error adding stored ICE candidate:", err);
+      try {
+        if (peerRef.current) {
+          await peerRef.current.setRemoteDescription(
+            new RTCSessionDescription(answer)
+          );
+          console.log("Remote description set successfully");
+          if (iceCandidates.length > 0) {
+            console.log(
+              `Adding ${iceCandidates.length} stored ICE candidates after remote description`
+            );
+            for (const candidate of iceCandidates) {
+              try {
+                await peerRef.current.addIceCandidate(candidate);
+                console.log("Stored ICE candidate added successfully");
+              } catch (err) {
+                console.error("Error adding stored ICE candidate:", err);
+              }
+            }
+            setIceCandidates([]);
           }
+        } else {
+          console.error("No peer connection available");
         }
-        setIceCandidates([]);
+      } catch (error) {
+        console.error("Error setting remote description:", error);
       }
-    } else {
-      console.error("No peer connection available");
-    }
-  } catch (error) {
-    console.error("Error setting remote description:", error);
-  }
-};
+    };
 
     const handleIceCandidate = async (data: any) => {
-  const { candidate, from } = data;
-  console.log("Received ICE candidate from peer");
+      const { candidate, from } = data;
+      console.log("Received ICE candidate from peer");
 
-  if (peerRef.current && peerRef.current.remoteDescription) {
-    try {
-      await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      console.log("ICE candidate added successfully");
-    } catch (error) {
-      console.error("Error adding ICE candidate:", error);
-    }
-  } else {
-    console.log("Storing ICE candidate for later - no remote description yet");
-    setIceCandidates((prev) => [...prev, new RTCIceCandidate(candidate)]);
-  }
-};
+      if (peerRef.current && peerRef.current.remoteDescription) {
+        try {
+          await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log("ICE candidate added successfully");
+        } catch (error) {
+          console.error("Error adding ICE candidate:", error);
+        }
+      } else {
+        console.log(
+          "Storing ICE candidate for later - no remote description yet"
+        );
+        setIceCandidates((prev) => [...prev, new RTCIceCandidate(candidate)]);
+      }
+    };
 
     const handleUserJoined = (data: any) => {
       console.log("User joined room:", data.userId || "Unknown User");
@@ -692,7 +768,7 @@ const handleUpvote = async () => {
     const handleUserAuthStatus = (data: any) => {
       console.log("Received other user auth status:", data.isLoggedIn);
       setIsOtherUserLoggedIn(data.isLoggedIn);
-      
+
       if (data.isLoggedIn && data.userName && data.email) {
         setPeerInfo({
           userName: data.userName,
@@ -706,9 +782,33 @@ const handleUpvote = async () => {
     };
 
     const handleUpvoteReceived = (data: any) => {
-      const { fromUser } = data;
+      const { fromUser, newUpvoteCount } = data;
+      if (user && data.toUser === user.userName) {
+        userRef.current = {
+          ...userRef.current!,
+          upvotes: newUpvoteCount || (userRef.current?.upvotes || 0) + 1,
+        };
+      }
+
       const systemMsg: Imessages = {
         message: `${fromUser} upvoted you!`,
+        type: "system",
+      };
+      setMessages((prev) => [...prev, systemMsg]);
+    };
+
+    const handleUpvoteRemoved = (data: any) => {
+      const { fromUser, newUpvoteCount } = data;
+      if (user && data.toUser === user.userName) {
+        userRef.current = {
+          ...userRef.current!,
+          upvotes:
+            newUpvoteCount || Math.max(0, (userRef.current?.upvotes || 0) - 1),
+        };
+      }
+
+      const systemMsg: Imessages = {
+        message: `${fromUser} removed their upvote`,
         type: "system",
       };
       setMessages((prev) => [...prev, systemMsg]);
@@ -735,6 +835,7 @@ const handleUpvote = async () => {
     socket.on("sendMessage", handleSendMessage);
     socket.on("userAuthStatus", handleUserAuthStatus);
     socket.on("upvoteReceived", handleUpvoteReceived);
+    socket.on("upvoteRemoved", handleUpvoteRemoved);
     socket.on("peerMicToggled", handlePeerMicToggleEvent);
     socket.on("peerVidToggled", handlePeerVidToggleEvent);
 
@@ -753,6 +854,7 @@ const handleUpvote = async () => {
       socket.off("sendMessage", handleSendMessage);
       socket.off("userAuthStatus", handleUserAuthStatus);
       socket.off("upvoteReceived", handleUpvoteReceived);
+      socket.off("upvoteRemoved", handleUpvoteRemoved);
       socket.off("peerMicToggled", handlePeerMicToggleEvent);
       socket.off("peerVidToggled", handlePeerVidToggleEvent);
 
@@ -842,25 +944,25 @@ const handleUpvote = async () => {
                 <div>
                   {areBothUsersLoggedIn() && peerInfo ? (
                     <button
-                      onClick={handleUpvote}
-                      disabled={hasUpvoted || isUpvoting || !user}
-                      className={`flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full transition-colors ${
-                        hasUpvoted
-                          ? "bg-green-500 text-white border-green-500"
-                          : isUpvoting
+                      onClick={hasUpvoted ? handleRemoveUpvote : handleUpvote}
+                      disabled={isUpvoting}
+                      className={`flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full text-md transition-colors ${
+                        isUpvoting
                           ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
+                          : hasUpvoted
+                          ? "bg-red-500 hover:bg-red-600 text-white border-red-500 cursor-pointer"
                           : "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
                       }`}
                     >
                       {isUpvoting ? (
                         <>
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          Upvoting...
+                          {hasUpvoted ? "Removing..." : "Upvoting..."}
                         </>
                       ) : hasUpvoted ? (
                         <>
                           <BiSolidUpvote size={20} />
-                          Upvoted!
+                          Remove
                         </>
                       ) : (
                         <>

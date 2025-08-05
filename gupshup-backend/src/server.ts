@@ -37,88 +37,122 @@ io.on("connection", (socket) => {
   let isLoggedIn: boolean = false;
 
   socket.on("findRoom", async (data: any) => {
-  try {
-    const { userId, isLoggedIn: userLoggedIn, userName, email, upvotes } = data;
-    currentUserId = userId;
-    isLoggedIn = userLoggedIn || false;
-    userSockets.set(socket.id, { 
-      userId, 
-      socketId: socket.id, 
-      isLoggedIn,
-      userName: userName || "",
-      email: email || "",
-      upvotes: upvotes || 0
-    });
-
-    currentRoomId = await findOrCreateRoom(userId);
-    socket.join(currentRoomId);
-
-    const roomInfo = await getRoomInfo(currentRoomId);
-
-    socket.emit("roomAssigned", {
-      roomId: currentRoomId,
-      members: roomInfo.members,
-      status: roomInfo.status,
-    });
-
-    if (roomInfo.members === "2") {
-      // Get other user's info
-      const otherUserData = Array.from(userSockets.values()).find(
-        userData => userData.socketId !== socket.id
-      );
-
-      socket.to(currentRoomId).emit("userJoined", {
+    try {
+      const {
         userId,
-        roomId: currentRoomId,
-        isLoggedIn: isLoggedIn,
+        isLoggedIn: userLoggedIn,
+        userName,
+        email,
+        upvotes,
+      } = data;
+      currentUserId = userId;
+      isLoggedIn = userLoggedIn || false;
+      userSockets.set(socket.id, {
+        userId,
+        socketId: socket.id,
+        isLoggedIn,
         userName: userName || "",
         email: email || "",
         upvotes: upvotes || 0,
       });
 
-      // Send other user's info to this user
-      if (otherUserData) {
-        socket.emit("userJoined", {
-          userId: otherUserData.userId,
-          roomId: currentRoomId,
-          isLoggedIn: otherUserData.isLoggedIn,
-          userName: otherUserData.userName || "",
-          email: otherUserData.email || "",
-          upvotes: otherUserData.upvotes || 0,
-        });
-      }
+      currentRoomId = await findOrCreateRoom(userId);
+      socket.join(currentRoomId);
 
-      socket.to(currentRoomId).emit("requestAuthStatus");
+      const roomInfo = await getRoomInfo(currentRoomId);
+
+      socket.emit("roomAssigned", {
+        roomId: currentRoomId,
+        members: roomInfo.members,
+        status: roomInfo.status,
+      });
+
+      if (roomInfo.members === "2") {
+        // Get other user's info
+        const otherUserData = Array.from(userSockets.values()).find(
+          (userData) => userData.socketId !== socket.id
+        );
+
+        socket.to(currentRoomId).emit("userJoined", {
+          userId,
+          roomId: currentRoomId,
+          isLoggedIn: isLoggedIn,
+          userName: userName || "",
+          email: email || "",
+          upvotes: upvotes || 0,
+        });
+
+        // Send other user's info to this user
+        if (otherUserData) {
+          socket.emit("userJoined", {
+            userId: otherUserData.userId,
+            roomId: currentRoomId,
+            isLoggedIn: otherUserData.isLoggedIn,
+            userName: otherUserData.userName || "",
+            email: otherUserData.email || "",
+            upvotes: otherUserData.upvotes || 0,
+          });
+        }
+
+        socket.to(currentRoomId).emit("requestAuthStatus");
+      }
+    } catch (error) {
+      console.error("Error finding room:", error);
+      socket.emit("error", { message: "Failed to find room" });
     }
-  } catch (error) {
-    console.error("Error finding room:", error);
-    socket.emit("error", { message: "Failed to find room" });
-  }
-});
+  });
 
   socket.on("upvoteGiven", (data: any) => {
-  const { fromUser, toUser } = data;
-  if (currentRoomId) {
-    socket.to(currentRoomId).emit("upvoteReceived", {
-      fromUser: fromUser,
-      toUser: toUser,
-    });
-    console.log(`Upvote notification sent: ${fromUser} upvoted ${toUser}`);
-  }
-});
+    const { fromUser, toUser, newUpvoteCount } = data;
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("upvoteReceived", {
+        fromUser: fromUser,
+        toUser: toUser,
+        newUpvoteCount: newUpvoteCount,
+      });
+      console.log(
+        `Upvote notification sent: ${fromUser} upvoted ${toUser}, new count: ${newUpvoteCount}`
+      );
+    }
+  });
+
+  socket.on("upvoteRemoved", (data: any) => {
+    const { fromUser, toUser, newUpvoteCount } = data;
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("upvoteRemoved", {
+        fromUser: fromUser,
+        toUser: toUser,
+        newUpvoteCount: newUpvoteCount,
+      });
+      console.log(
+        `Upvote removal notification sent: ${fromUser} removed upvote from ${toUser}, new count: ${newUpvoteCount}`
+      );
+    }
+  });
+
+  socket.on("upvoteGiven", (data: any) => {
+    const { fromUser, toUser } = data;
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("upvoteReceived", {
+        fromUser: fromUser,
+        toUser: toUser,
+      });
+      console.log(`Upvote notification sent: ${fromUser} upvoted ${toUser}`);
+    }
+  });
 
   socket.on("userAuthStatus", (data: any) => {
-  const { isLoggedIn: authStatus, userName, email, upvotes } = data;
-  if (currentRoomId) {
-    socket.to(currentRoomId).emit("userAuthStatus", {
-      isLoggedIn: authStatus,
-      userName: userName || "",
-      email: email || "",
-      upvotes: upvotes || 0,
-      from: socket.id,
-    });
-  }
-});
+    const { isLoggedIn: authStatus, userName, email, upvotes } = data;
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("userAuthStatus", {
+        isLoggedIn: authStatus,
+        userName: userName || "",
+        email: email || "",
+        upvotes: upvotes || 0,
+        from: socket.id,
+      });
+    }
+  });
 
   socket.on("requestAuthStatus", () => {
     if (currentRoomId) {
@@ -199,7 +233,7 @@ io.on("connection", (socket) => {
 
   socket.on("micToggled", (data) => {
     console.log("SERVER: Received micToggled event with data:", data);
-    
+
     if (currentRoomId) {
       socket.to(currentRoomId).emit("peerMicToggled", data);
       console.log("SERVER: Forwarded peerMicToggled to room:", currentRoomId);
@@ -210,7 +244,7 @@ io.on("connection", (socket) => {
 
   socket.on("vidToggled", (data) => {
     console.log("SERVER: Received vidToggled event with data:", data);
-    
+
     if (currentRoomId) {
       socket.to(currentRoomId).emit("peerVidToggled", data);
       console.log("SERVER: Forwarded peerVidToggled to room:", currentRoomId);
@@ -220,72 +254,72 @@ io.on("connection", (socket) => {
   });
 
   socket.on("searchNewRoom", async (data) => {
-  if (currentUserId) {
-    try {
-      if (data && typeof data.isLoggedIn !== "undefined") {
-        isLoggedIn = data.isLoggedIn;
-        userSockets.set(socket.id, {
-          userId: currentUserId,
-          socketId: socket.id,
-          isLoggedIn,
-          userName: data.userName || "",
-          email: data.email || "",
-          upvotes: data.upvotes || 0,
-        });
-      }
-
-      if (currentRoomId) {
-        socket.leave(currentRoomId);
-      }
-
-      currentRoomId = await findOrCreateRoom(currentUserId);
-      socket.join(currentRoomId);
-
-      const roomInfo = await getRoomInfo(currentRoomId);
-      socket.emit("roomAssigned", {
-        roomId: currentRoomId,
-        members: roomInfo.members,
-        status: roomInfo.status,
-      });
-
-      if (roomInfo.members === "2") {
-        // Get other user's info
-        const otherUserData = Array.from(userSockets.values()).find(
-          userData => userData.socketId !== socket.id
-        );
-
-        socket.to(currentRoomId).emit("userJoined", {
-          userId: currentUserId,
-          roomId: currentRoomId,
-          isLoggedIn: isLoggedIn,
-          userName: data.userName || "",
-          email: data.email || "",
-          upvotes: data.upvotes || 0,
-        });
-
-        // Send other user's info to this user
-        if (otherUserData) {
-          socket.emit("userJoined", {
-            userId: otherUserData.userId,
-            roomId: currentRoomId,
-            isLoggedIn: otherUserData.isLoggedIn,
-            userName: otherUserData.userName || "",
-            email: otherUserData.email || "",
-            upvotes: otherUserData.upvotes || 0,
+    if (currentUserId) {
+      try {
+        if (data && typeof data.isLoggedIn !== "undefined") {
+          isLoggedIn = data.isLoggedIn;
+          userSockets.set(socket.id, {
+            userId: currentUserId,
+            socketId: socket.id,
+            isLoggedIn,
+            userName: data.userName || "",
+            email: data.email || "",
+            upvotes: data.upvotes || 0,
           });
         }
 
-        socket.to(currentRoomId).emit("requestAuthStatus");
-      }
+        if (currentRoomId) {
+          socket.leave(currentRoomId);
+        }
 
-      console.log(
-        `User ${currentUserId} found new room ${currentRoomId} with auth status: ${isLoggedIn}`
-      );
-    } catch (error) {
-      console.error("Error searching new room:", error);
+        currentRoomId = await findOrCreateRoom(currentUserId);
+        socket.join(currentRoomId);
+
+        const roomInfo = await getRoomInfo(currentRoomId);
+        socket.emit("roomAssigned", {
+          roomId: currentRoomId,
+          members: roomInfo.members,
+          status: roomInfo.status,
+        });
+
+        if (roomInfo.members === "2") {
+          // Get other user's info
+          const otherUserData = Array.from(userSockets.values()).find(
+            (userData) => userData.socketId !== socket.id
+          );
+
+          socket.to(currentRoomId).emit("userJoined", {
+            userId: currentUserId,
+            roomId: currentRoomId,
+            isLoggedIn: isLoggedIn,
+            userName: data.userName || "",
+            email: data.email || "",
+            upvotes: data.upvotes || 0,
+          });
+
+          // Send other user's info to this user
+          if (otherUserData) {
+            socket.emit("userJoined", {
+              userId: otherUserData.userId,
+              roomId: currentRoomId,
+              isLoggedIn: otherUserData.isLoggedIn,
+              userName: otherUserData.userName || "",
+              email: otherUserData.email || "",
+              upvotes: otherUserData.upvotes || 0,
+            });
+          }
+
+          socket.to(currentRoomId).emit("requestAuthStatus");
+        }
+
+        console.log(
+          `User ${currentUserId} found new room ${currentRoomId} with auth status: ${isLoggedIn}`
+        );
+      } catch (error) {
+        console.error("Error searching new room:", error);
+      }
     }
-  }
-});
+  });
 
   socket.on("disconnect", async () => {
     console.log("User disconnected:", socket.id);

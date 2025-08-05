@@ -35,15 +35,33 @@ const addUpvote = async (req: Request, res: Response) => {
   }
 
   try {
-    const userToUpvote = await User.findOne({ email }).select("-password -refreshToken");
+    const currentUser = (req as any).user as IUser;
+    if (!currentUser || !currentUser._id) {
+      throw new ErrorResponse(401, "User not authenticated");
+    }
+
+    const userToUpvote = await User.findOne({ email }).select(
+      "-password -refreshToken"
+    );
     if (!userToUpvote) {
       throw new ErrorResponse(404, "User to upvote not found");
+    }
+
+    if (currentUser._id.toString() === userToUpvote._id.toString()) {
+      throw new ErrorResponse(400, "Cannot upvote yourself");
+    }
+
+    const currentUserFull = await User.findById(currentUser._id).select(
+      "upvotesGiven"
+    );
+    if (currentUserFull?.upvotesGiven.includes(userToUpvote._id.toString())) {
+      throw new ErrorResponse(400, "You have already upvoted this user");
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userToUpvote._id,
       {
-        $inc: { upvotes: 1 }
+        $inc: { upvotes: 1 },
       },
       { new: true }
     ).select("-password -refreshToken");
@@ -57,6 +75,9 @@ const addUpvote = async (req: Request, res: Response) => {
       .json(new ApiResponse(200, updatedUser, "Upvote added successfully"));
   } catch (error) {
     console.error("Add upvote error:", error);
+    if (error instanceof ErrorResponse) {
+      throw error;
+    }
     throw new ErrorResponse(500, `Error adding upvote: ${error}`);
   }
 };
@@ -68,15 +89,33 @@ const removeUpvote = async (req: Request, res: Response) => {
   }
 
   try {
-    const userToUpdate = await User.findOne({ email }).select("-password -refreshToken");
+    const currentUser = (req as any).user as IUser;
+    if (!currentUser || !currentUser._id) {
+      throw new ErrorResponse(401, "User not authenticated");
+    }
+
+    const userToUpdate = await User.findOne({ email }).select(
+      "-password -refreshToken"
+    );
     if (!userToUpdate) {
       throw new ErrorResponse(404, "User not found");
+    }
+
+    if (currentUser._id.toString() === userToUpdate._id.toString()) {
+      throw new ErrorResponse(400, "Cannot remove upvote from yourself");
+    }
+
+    const currentUserFull = await User.findById(currentUser._id).select(
+      "upvotesGiven"
+    );
+    if (!currentUserFull?.upvotesGiven.includes(userToUpdate._id.toString())) {
+      throw new ErrorResponse(400, "You haven't upvoted this user");
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userToUpdate._id,
       {
-        $inc: { upvotes: -1 }
+        $inc: { upvotes: -1 },
       },
       { new: true }
     ).select("-password -refreshToken");
@@ -95,50 +134,49 @@ const removeUpvote = async (req: Request, res: Response) => {
       .json(new ApiResponse(200, updatedUser, "Upvote removed successfully"));
   } catch (error) {
     console.error("Remove upvote error:", error);
+    if (error instanceof ErrorResponse) {
+      throw error;
+    }
     throw new ErrorResponse(500, `Error removing upvote: ${error}`);
   }
 };
 
 const updateUpvoteList = async (req: Request, res: Response) => {
   const { userName, email } = req.body;
-  
+
   console.log("updateUpvoteList called with:", { userName, email });
-  console.log("req.user:", (req as any).user);
-  
+
   if (!userName || !email) {
     throw new ErrorResponse(400, "email or username missing");
   }
 
   try {
-    // Type assertion for authenticated user
     const currentUser = (req as any).user as IUser;
     if (!currentUser || !currentUser._id) {
       console.error("No authenticated user found in request");
-      throw new ErrorResponse(401, "User not authenticated - please log in again");
+      throw new ErrorResponse(
+        401,
+        "User not authenticated - please log in again"
+      );
     }
 
-    // Find the user to upvote
-    const userToUpvote = await User.findOne({ email }).select("_id userName email");
+    const userToUpvote = await User.findOne({ email }).select(
+      "_id userName email"
+    );
     if (!userToUpvote) {
       console.error("User to upvote not found:", email);
       throw new ErrorResponse(404, "User to upvote not found");
     }
 
-    // Check if user is trying to upvote themselves
     if (currentUser._id.toString() === userToUpvote._id.toString()) {
       throw new ErrorResponse(400, "Cannot upvote yourself");
     }
 
-    console.log("Current user ID type:", typeof currentUser._id, currentUser._id);
-    console.log("Target user ID type:", typeof userToUpvote._id, userToUpvote._id);
-
-    // Update the current user's upvotesGiven array
-    // Since both _id values are strings (UUIDs), this should work correctly now
     const updatedUser = await User.findByIdAndUpdate(
       currentUser._id,
       {
         $addToSet: {
-          upvotesGiven: userToUpvote._id.toString(), // Ensure it's a string
+          upvotesGiven: userToUpvote._id.toString(),
         },
       },
       { new: true }
@@ -152,8 +190,9 @@ const updateUpvoteList = async (req: Request, res: Response) => {
     console.log("Successfully updated upvote list for user:", currentUser._id);
     return res
       .status(200)
-      .json(new ApiResponse(200, updatedUser, "upvote list updated successfully"));
-      
+      .json(
+        new ApiResponse(200, updatedUser, "upvote list updated successfully")
+      );
   } catch (error) {
     console.error("Update upvote list error:", error);
     if (error instanceof ErrorResponse) {
@@ -183,7 +222,7 @@ const removeFromUpvoteList = async (req: Request, res: Response) => {
       currentUser._id,
       {
         $pull: {
-          upvotesGiven: userToRemove._id,
+          upvotesGiven: userToRemove._id.toString(),
         },
       },
       { new: true }
@@ -198,7 +237,47 @@ const removeFromUpvoteList = async (req: Request, res: Response) => {
       .json(new ApiResponse(200, user, "upvote list updated successfully"));
   } catch (error) {
     console.error("Remove from upvote list error:", error);
+    if (error instanceof ErrorResponse) {
+      throw error;
+    }
     throw new ErrorResponse(500, `Error removing from upvote list: ${error}`);
+  }
+};
+
+const checkUpvoteStatus = async (req: Request, res: Response) => {
+  const { email } = req.query;
+
+  if (!email) {
+    throw new ErrorResponse(400, "email missing");
+  }
+
+  try {
+    const currentUser = (req as any).user as IUser;
+    if (!currentUser || !currentUser._id) {
+      throw new ErrorResponse(401, "User not authenticated");
+    }
+
+    const userToCheck = await User.findOne({ email }).select("_id");
+    if (!userToCheck) {
+      throw new ErrorResponse(404, "User not found");
+    }
+
+    const currentUserFull = await User.findById(currentUser._id).select(
+      "upvotesGiven"
+    );
+    const hasUpvoted =
+      currentUserFull?.upvotesGiven.includes(userToCheck._id.toString()) ||
+      false;
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { hasUpvoted }, "Upvote status retrieved"));
+  } catch (error) {
+    console.error("Check upvote status error:", error);
+    if (error instanceof ErrorResponse) {
+      throw error;
+    }
+    throw new ErrorResponse(500, `Error checking upvote status: ${error}`);
   }
 };
 
@@ -393,7 +472,7 @@ const logout = async (req: Request, res: Response) => {
       .json(new ApiResponse(200, {}, "User logged out successfully"));
   } catch (error) {
     console.error("Logout error:", error);
-    
+
     const options = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -509,14 +588,14 @@ const verifyUser = async (req: Request, res: Response) => {
         .status(401)
         .json({ authenticated: false, message: "No access token found" });
     }
-    
+
     interface DecodedToken extends jwt.JwtPayload {
       _id: string;
       userName: string;
       email: string;
       avatar?: string;
     }
-    
+
     const decoded = jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET as string
@@ -555,4 +634,5 @@ export {
   googleLogin,
   registerUser,
   verifyUser,
+  checkUpvoteStatus,
 };

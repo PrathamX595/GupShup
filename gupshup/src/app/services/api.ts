@@ -88,7 +88,10 @@ const votingService = {
       });
       return res;
     } catch (error: any) {
-      console.error("removeUpvote error:", error.response?.data || error.message);
+      console.error(
+        "removeUpvote error:",
+        error.response?.data || error.message
+      );
       throw error;
     }
   },
@@ -99,7 +102,24 @@ const votingService = {
       });
       return res;
     } catch (error: any) {
-      console.error("removeFromList error:", error.response?.data || error.message);
+      console.error(
+        "removeFromList error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+  checkUpvoteStatus: async (email: string) => {
+    try {
+      const res = await api.get(
+        `/api/upvote/status?email=${encodeURIComponent(email)}`
+      );
+      return res;
+    } catch (error: any) {
+      console.error(
+        "checkUpvoteStatus error:",
+        error.response?.data || error.message
+      );
       throw error;
     }
   },
