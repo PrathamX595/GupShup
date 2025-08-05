@@ -56,25 +56,27 @@ const authService = {
 const votingService = {
   addVote: async (userName: string, email: string) => {
     try {
+      console.log("addVote called with:", { userName, email });
       const res = await api.put(`/api/upvote/add`, {
         userName,
         email,
       });
-
       return res;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("addVote error:", error.response?.data || error.message);
       throw error;
     }
   },
   updateList: async (userName: string, email: string) => {
     try {
+      console.log("updateList called with:", { userName, email });
       const res = await api.put(`/api/upvote/addInList`, {
         userName,
         email,
       });
-
       return res;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("updateList error:", error.response?.data || error.message);
       throw error;
     }
   },
@@ -84,9 +86,9 @@ const votingService = {
         userName,
         email,
       });
-
       return res;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("removeUpvote error:", error.response?.data || error.message);
       throw error;
     }
   },
@@ -95,9 +97,9 @@ const votingService = {
       const res = await api.put(`/api/upvote/removeFromList`, {
         email,
       });
-
       return res;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("removeFromList error:", error.response?.data || error.message);
       throw error;
     }
   },

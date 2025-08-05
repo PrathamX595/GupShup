@@ -16,10 +16,18 @@ import {
   FaMicrophoneSlash,
 } from "react-icons/fa";
 import { BiUpvote, BiSolidUpvote } from "react-icons/bi";
+import { votingService } from "../services/api";
 
 interface Imessages {
   message: string;
   type: "self" | "friend" | "system";
+}
+
+interface PeerInfo {
+  userName: string;
+  email: string;
+  upvotes: number;
+  isLoggedIn: boolean;
 }
 
 export default function Chat() {
@@ -40,6 +48,9 @@ export default function Chat() {
   const [connectionState, setConnectionState] = useState<string>("new");
   const [iceCandidates, setIceCandidates] = useState<RTCIceCandidate[]>([]);
   const [hasVideo, setHasVideo] = useState<boolean>(false);
+  const [peerInfo, setPeerInfo] = useState<PeerInfo | null>(null);
+  const [hasUpvoted, setHasUpvoted] = useState<boolean>(false);
+  const [isUpvoting, setIsUpvoting] = useState<boolean>(false);
 
   const [isOtherUserLoggedIn, setIsOtherUserLoggedIn] =
     useState<boolean>(false);
@@ -54,6 +65,58 @@ export default function Chat() {
   const areBothUsersLoggedIn = () => {
     return user && isOtherUserLoggedIn;
   };
+const handleUpvote = async () => {
+  if (!user || !peerInfo || isUpvoting || hasUpvoted) return;
+
+  console.log("Starting upvote process for:", peerInfo.userName);
+  setIsUpvoting(true);
+  
+  try {
+    // Add upvote to peer
+    console.log("Step 1: Adding upvote to peer");
+    await votingService.addVote(peerInfo.userName, peerInfo.email);
+    
+    // Update upvote list
+    console.log("Step 2: Updating upvote list");
+    await votingService.updateList(peerInfo.userName, peerInfo.email);
+    
+    setHasUpvoted(true);
+    setPeerInfo(prev => prev ? { ...prev, upvotes: prev.upvotes + 1 } : null);
+    
+    // Send upvote notification to peer
+    socket.emit("upvoteGiven", {
+      fromUser: user.userName,
+      toUser: peerInfo.userName,
+    });
+
+    const systemMsg: Imessages = {
+      message: `You upvoted ${peerInfo.userName}`,
+      type: "system",
+    };
+    setMessages((prev) => [...prev, systemMsg]);
+
+  } catch (error: any) {
+    console.error("Upvote error:", error);
+    
+    let errorMessage = "Failed to upvote. Please try again.";
+    
+    if (error.response?.status === 401) {
+      errorMessage = "Please log in again to upvote.";
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response.data?.message || "Invalid upvote request.";
+    } else if (error.response?.status === 404) {
+      errorMessage = "User not found.";
+    }
+    
+    const errorMsg: Imessages = {
+      message: errorMessage,
+      type: "system",
+    };
+    setMessages((prev) => [...prev, errorMsg]);
+  } finally {
+    setIsUpvoting(false);
+  }
+};
 
   const handleMicToggle = () => {
     if (streamRef.current) {
@@ -314,6 +377,10 @@ export default function Chat() {
     setIceCandidates([]);
     setHasVideo(false);
     setIsOtherUserLoggedIn(false);
+    setPeerInfo(null);
+    setHasUpvoted(false);
+    setIsUpvoting(false);
+    
     socket.emit("leaveRoom");
   };
 
@@ -401,6 +468,9 @@ export default function Chat() {
       socket.emit("findRoom", {
         userId: userRef.current?._id || socket.id,
         isLoggedIn: !!userRef.current,
+        userName: userRef.current?.userName || "",
+        email: userRef.current?.email || "",
+        upvotes: userRef.current?.upvotes || 0,
       });
     };
 
@@ -433,71 +503,96 @@ export default function Chat() {
     };
 
     const handleGotReq = async (data: any) => {
-      const { socketId, offer } = data;
-      console.log("Got call request from:", socketId);
+  const { socketId, offer } = data;
+  console.log("Got call request from:", socketId);
 
-      if (!streamRef.current) {
-        console.error("No local stream available");
-        return;
+  if (!streamRef.current) {
+    console.error("No local stream available");
+    return;
+  }
+
+  try {
+    const newPeer = createPeerConnection();
+    setPeer(newPeer);
+    peerRef.current = newPeer;
+
+    streamRef.current.getTracks().forEach((track) => {
+      newPeer.addTrack(track, streamRef.current!);
+      console.log(
+        `Added ${track.kind} track for answer (enabled: ${track.enabled})`
+      );
+    });
+
+    await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
+    console.log("Remote description set for incoming call");
+
+    const answer = await newPeer.createAnswer();
+    await newPeer.setLocalDescription(answer);
+
+    socket.emit("call-accepted", { socketId, answer });
+    if (iceCandidates.length > 0) {
+      console.log(`Adding ${iceCandidates.length} stored ICE candidates after setting remote description`);
+      for (const candidate of iceCandidates) {
+        try {
+          await newPeer.addIceCandidate(candidate);
+          console.log("Stored ICE candidate added successfully");
+        } catch (err) {
+          console.error("Error adding stored ICE candidate:", err);
+        }
       }
-
-      try {
-        const newPeer = createPeerConnection();
-        setPeer(newPeer);
-        peerRef.current = newPeer;
-
-        streamRef.current.getTracks().forEach((track) => {
-          newPeer.addTrack(track, streamRef.current!);
-          console.log(
-            `Added ${track.kind} track for answer (enabled: ${track.enabled})`
-          );
-        });
-
-        await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
-
-        const answer = await newPeer.createAnswer();
-        await newPeer.setLocalDescription(answer);
-
-        socket.emit("call-accepted", { socketId, answer });
-      } catch (error) {
-        console.error("Error handling call request:", error);
-      }
-    };
+      setIceCandidates([]);
+    }
+  } catch (error) {
+    console.error("Error handling call request:", error);
+  }
+};
 
     const handleCallAccepted = async (data: any) => {
-      const { answer } = data;
-      console.log("Call accepted, setting remote description");
+  const { answer } = data;
+  console.log("Call accepted, setting remote description");
 
-      try {
-        if (peerRef.current) {
-          await peerRef.current.setRemoteDescription(
-            new RTCSessionDescription(answer)
-          );
-          console.log("Remote description set successfully");
-        } else {
-          console.error("No peer connection available");
+  try {
+    if (peerRef.current) {
+      await peerRef.current.setRemoteDescription(
+        new RTCSessionDescription(answer)
+      );
+      console.log("Remote description set successfully");
+      if (iceCandidates.length > 0) {
+        console.log(`Adding ${iceCandidates.length} stored ICE candidates after remote description`);
+        for (const candidate of iceCandidates) {
+          try {
+            await peerRef.current.addIceCandidate(candidate);
+            console.log("Stored ICE candidate added successfully");
+          } catch (err) {
+            console.error("Error adding stored ICE candidate:", err);
+          }
         }
-      } catch (error) {
-        console.error("Error setting remote description:", error);
+        setIceCandidates([]);
       }
-    };
+    } else {
+      console.error("No peer connection available");
+    }
+  } catch (error) {
+    console.error("Error setting remote description:", error);
+  }
+};
 
     const handleIceCandidate = async (data: any) => {
-      const { candidate, from } = data;
-      console.log("Received ICE candidate from peer");
+  const { candidate, from } = data;
+  console.log("Received ICE candidate from peer");
 
-      if (peerRef.current && peerRef.current.remoteDescription) {
-        try {
-          await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log("ICE candidate added successfully");
-        } catch (error) {
-          console.error("Error adding ICE candidate:", error);
-        }
-      } else {
-        console.log("Storing ICE candidate for later");
-        setIceCandidates((prev) => [...prev, new RTCIceCandidate(candidate)]);
-      }
-    };
+  if (peerRef.current && peerRef.current.remoteDescription) {
+    try {
+      await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log("ICE candidate added successfully");
+    } catch (error) {
+      console.error("Error adding ICE candidate:", error);
+    }
+  } else {
+    console.log("Storing ICE candidate for later - no remote description yet");
+    setIceCandidates((prev) => [...prev, new RTCIceCandidate(candidate)]);
+  }
+};
 
     const handleUserJoined = (data: any) => {
       console.log("User joined room:", data.userId || "Unknown User");
@@ -506,13 +601,27 @@ export default function Chat() {
       setMessages([]);
       setRoomStatus("active");
       setIsOtherUserLoggedIn(data.isLoggedIn || false);
+      if (data.isLoggedIn && data.userName && data.email) {
+        setPeerInfo({
+          userName: data.userName,
+          email: data.email,
+          upvotes: data.upvotes || 0,
+          isLoggedIn: true,
+        });
+      } else {
+        setPeerInfo(null);
+      }
 
       setIsPeerMicOn(false);
       setIsPeerVideoOn(false);
+      setHasUpvoted(false);
 
       console.log("Sending our auth status to new user");
       socket.emit("userAuthStatus", {
         isLoggedIn: !!userRef.current,
+        userName: userRef.current?.userName || "",
+        email: userRef.current?.email || "",
+        upvotes: userRef.current?.upvotes || 0,
       });
 
       setTimeout(() => {
@@ -535,6 +644,9 @@ export default function Chat() {
 
       setIsPeerMicOn(false);
       setIsPeerVideoOn(false);
+      setPeerInfo(null);
+      setHasUpvoted(false);
+      setIsUpvoting(false);
 
       if (peerRef.current) {
         peerRef.current.close();
@@ -551,6 +663,9 @@ export default function Chat() {
       setConnectionState("new");
       setHasVideo(false);
       setIsOtherUserLoggedIn(false);
+      setPeerInfo(null);
+      setHasUpvoted(false);
+      setIsUpvoting(false);
 
       if (peerRef.current) {
         peerRef.current.close();
@@ -560,6 +675,9 @@ export default function Chat() {
 
       socket.emit("searchNewRoom", {
         isLoggedIn: !!userRef.current,
+        userName: userRef.current?.userName || "",
+        email: userRef.current?.email || "",
+        upvotes: userRef.current?.upvotes || 0,
       });
     };
 
@@ -574,6 +692,26 @@ export default function Chat() {
     const handleUserAuthStatus = (data: any) => {
       console.log("Received other user auth status:", data.isLoggedIn);
       setIsOtherUserLoggedIn(data.isLoggedIn);
+      
+      if (data.isLoggedIn && data.userName && data.email) {
+        setPeerInfo({
+          userName: data.userName,
+          email: data.email,
+          upvotes: data.upvotes || 0,
+          isLoggedIn: true,
+        });
+      } else {
+        setPeerInfo(null);
+      }
+    };
+
+    const handleUpvoteReceived = (data: any) => {
+      const { fromUser } = data;
+      const systemMsg: Imessages = {
+        message: `${fromUser} upvoted you!`,
+        type: "system",
+      };
+      setMessages((prev) => [...prev, systemMsg]);
     };
 
     const handlePeerMicToggleEvent = (data: any) => {
@@ -596,6 +734,7 @@ export default function Chat() {
     socket.on("findNewRoom", handleFindNewRoom);
     socket.on("sendMessage", handleSendMessage);
     socket.on("userAuthStatus", handleUserAuthStatus);
+    socket.on("upvoteReceived", handleUpvoteReceived);
     socket.on("peerMicToggled", handlePeerMicToggleEvent);
     socket.on("peerVidToggled", handlePeerVidToggleEvent);
 
@@ -613,6 +752,7 @@ export default function Chat() {
       socket.off("findNewRoom", handleFindNewRoom);
       socket.off("sendMessage", handleSendMessage);
       socket.off("userAuthStatus", handleUserAuthStatus);
+      socket.off("upvoteReceived", handleUpvoteReceived);
       socket.off("peerMicToggled", handlePeerMicToggleEvent);
       socket.off("peerVidToggled", handlePeerVidToggleEvent);
 
@@ -658,6 +798,30 @@ export default function Chat() {
                     {isSocketConnected ? "Connected" : "Disconnected"}
                   </div>
                 </div>
+
+                <div className="text-sm text-gray-700 mt-4 p-3 bg-gray-50 rounded-lg border">
+                  <div className="font-bold text-center mb-2">Upvotes</div>
+                  <div className="flex justify-between items-center">
+                    <div className="text-center">
+                      <div className="font-medium">You</div>
+                      <div className="text-lg font-bold text-blue-600">
+                        {user?.upvotes || 0}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium">Peer</div>
+                      <div className="text-lg font-bold text-green-600">
+                        {peerInfo?.upvotes || 0}
+                      </div>
+                    </div>
+                  </div>
+                  {peerInfo && (
+                    <div className="text-xs text-center mt-2 text-gray-500">
+                      {peerInfo.userName}
+                    </div>
+                  )}
+                </div>
+
                 <div className="text-xs text-gray-500 mt-2 max-w-48 bg-gray-100 p-2 rounded">
                   <div className="font-bold">Debug:</div>
                   <div>
@@ -676,20 +840,42 @@ export default function Chat() {
 
               <div className="flex flex-col gap-5">
                 <div>
-                  {areBothUsersLoggedIn() ? (
-                    <div className="flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors">
-                      upvote
-                      <div>
-                        <BiUpvote size={20} />
-                      </div>
-                    </div>
+                  {areBothUsersLoggedIn() && peerInfo ? (
+                    <button
+                      onClick={handleUpvote}
+                      disabled={hasUpvoted || isUpvoting || !user}
+                      className={`flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full transition-colors ${
+                        hasUpvoted
+                          ? "bg-green-500 text-white border-green-500"
+                          : isUpvoting
+                          ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
+                          : "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
+                      }`}
+                    >
+                      {isUpvoting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          Upvoting...
+                        </>
+                      ) : hasUpvoted ? (
+                        <>
+                          <BiSolidUpvote size={20} />
+                          Upvoted!
+                        </>
+                      ) : (
+                        <>
+                          <BiUpvote size={20} />
+                          Upvote
+                        </>
+                      )}
+                    </button>
                   ) : (
                     <div className="flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full bg-gray-300 text-gray-600 text-md">
                       {user
                         ? isOtherUserLoggedIn
-                          ? "Add friend"
-                          : "anonymous peer"
-                        : "Login to add friends"}
+                          ? "Both users must be logged in"
+                          : "Peer not logged in"
+                        : "Login to upvote"}
                     </div>
                   )}
                 </div>

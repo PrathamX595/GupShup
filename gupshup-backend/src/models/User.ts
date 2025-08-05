@@ -36,7 +36,7 @@ const UserSchema: Schema<IUser> = new Schema({
   refreshToken: { type: String },
   upvotesGiven: [
     {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "User",
     },
   ],

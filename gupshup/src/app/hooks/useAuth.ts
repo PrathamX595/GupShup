@@ -5,10 +5,12 @@ interface IUser extends Document {
   _id: string;
   userName: string;
   email: string;
-  avatar: string;
+  avatar?: string;
+  upvotes: number;
+  upvotesGiven: string[];
+  refreshToken?: string;
   createdAt: Date;
-  password: string;
-  refreshToken: string;
+  updatedAt: Date;
 
   isPasswordCorrect(password: string): Promise<boolean>;
   generateAccessToken(): string;
