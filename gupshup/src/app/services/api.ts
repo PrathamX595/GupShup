@@ -5,7 +5,7 @@ const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
 const api = axios.create({
   baseURL: backendUrl,
   withCredentials: true,
-  timeout: 1000,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },

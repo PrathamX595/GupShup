@@ -299,7 +299,8 @@ const registerUser = async (req: Request, res: Response) => {
 };
 
 const logout = async (req: Request, res: Response) => {
-  await User.findByIdAndUpdate(
+  try {
+    await User.findByIdAndUpdate(
     (req.user as IUser)?._id,
     {
       $set: {
@@ -311,6 +312,7 @@ const logout = async (req: Request, res: Response) => {
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
+    path: "/",
   };
 
   return res
@@ -318,6 +320,22 @@ const logout = async (req: Request, res: Response) => {
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged out successfully"));
+  } catch (error) {
+    console.error("Logout error:", error);
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    };
+
+    return res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json(new ApiResponse(200, {}, "User logged out successfully"));
+  }
+  
 };
 
 const getCurrentUser = async (req: Request, res: Response) => {
