@@ -33,6 +33,8 @@ interface PeerInfo {
 export default function Chat() {
   const router = useRouter();
   const { user } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [selfMessage, setSelfMessage] = useState<string>("");
   const [messages, setMessages] = useState<Imessages[]>([]);
   const [roomStatus, setRoomStatus] = useState<string>("searching");
@@ -118,17 +120,21 @@ export default function Chat() {
     }
   };
 
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
+  };
+
   const handleRemoveUpvote = async () => {
     if (!user || !peerInfo || isUpvoting || !hasUpvoted) return;
 
-    console.log("Starting remove upvote process for:", peerInfo.userName);
     setIsUpvoting(true);
 
     try {
-      console.log("Step 1: Removing upvote from peer");
       await votingService.removeUpvote(peerInfo.userName, peerInfo.email);
 
-      console.log("Step 2: Removing from upvote list");
       await votingService.removeFromList(peerInfo.email);
 
       setHasUpvoted(false);
@@ -141,12 +147,6 @@ export default function Chat() {
         toUser: peerInfo.userName,
         newUpvoteCount: Math.max(0, peerInfo.upvotes - 1),
       });
-
-      const systemMsg: Imessages = {
-        message: `You removed upvote from ${peerInfo.userName}`,
-        type: "system",
-      };
-      setMessages((prev) => [...prev, systemMsg]);
     } catch (error: any) {
       console.error("Remove upvote error:", error);
 
@@ -240,90 +240,6 @@ export default function Chat() {
     setIsPeerMicOn(isRemotePeerMicOn);
   };
 
-  useEffect(() => {
-    streamRef.current = stream;
-  }, [stream]);
-
-  useEffect(() => {
-    peerRef.current = peer;
-  }, [peer]);
-
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
-
-  useEffect(() => {
-    if (localVideoRef.current && stream) {
-      localVideoRef.current.srcObject = stream;
-      const videoTracks = stream.getVideoTracks();
-      const audioTracks = stream.getAudioTracks();
-
-      videoTracks.forEach((track, i) => {
-        track.enabled = isVideoOn;
-      });
-
-      audioTracks.forEach((track, i) => {
-        track.enabled = isMicOn;
-      });
-    }
-  }, [stream, isVideoOn, isMicOn]);
-
-  useEffect(() => {
-    if (remoteVideoRef.current && incomingStream) {
-      remoteVideoRef.current.srcObject = incomingStream;
-
-      const videoTracks = incomingStream.getVideoTracks();
-      const audioTracks = incomingStream.getAudioTracks();
-
-      setHasVideo(videoTracks.length > 0);
-
-      if (videoTracks.length > 0) {
-        videoTracks.forEach((track, i) => {
-          console.log(`Video track ${i} details:`, {
-            label: track.label,
-            enabled: track.enabled,
-            readyState: track.readyState,
-            muted: track.muted,
-            id: track.id,
-            kind: track.kind,
-          });
-        });
-      }
-
-      const videoElement = remoteVideoRef.current;
-      videoElement.onloadedmetadata = () => {
-        videoElement
-          .play()
-          .then(() => {
-            console.log("Remote video playing successfully");
-          })
-          .catch((error) => {
-            console.error("Remote video failed to play:", error);
-          });
-      };
-
-      videoElement.oncanplay = () => console.log("Remote video can play");
-      videoElement.onplaying = () => console.log("Remote video is playing");
-      videoElement.onpause = () => console.log("Remote video paused");
-      videoElement.onerror = (e) => console.error("Remote video error:", e);
-      videoElement.onstalled = () => console.log("Remote video stalled");
-      videoElement.onwaiting = () => console.log("Remote video waiting");
-    }
-  }, [incomingStream]);
-
-  useEffect(() => {
-    if (peer && iceCandidates.length > 0) {
-      iceCandidates.forEach(async (candidate) => {
-        try {
-          await peer.addIceCandidate(candidate);
-        } catch (err) {
-          console.error("Error adding stored ICE candidate:", err);
-        }
-      });
-      setIceCandidates([]);
-    }
-  }, [peer, iceCandidates]);
-
   const createPeerConnection = useCallback(() => {
     const newPeer = new RTCPeerConnection({
       iceServers: [
@@ -414,6 +330,10 @@ export default function Chat() {
     }
     setSelfMessage("");
     setIsEmojiOpen(false);
+
+    setTimeout(() => {
+      scrollToBottom();
+    }, 50);
   };
 
   const handleNextRoom = () => {
@@ -506,6 +426,94 @@ export default function Chat() {
       }
     }
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    streamRef.current = stream;
+  }, [stream]);
+
+  useEffect(() => {
+    peerRef.current = peer;
+  }, [peer]);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  useEffect(() => {
+    if (localVideoRef.current && stream) {
+      localVideoRef.current.srcObject = stream;
+      const videoTracks = stream.getVideoTracks();
+      const audioTracks = stream.getAudioTracks();
+
+      videoTracks.forEach((track, i) => {
+        track.enabled = isVideoOn;
+      });
+
+      audioTracks.forEach((track, i) => {
+        track.enabled = isMicOn;
+      });
+    }
+  }, [stream, isVideoOn, isMicOn]);
+
+  useEffect(() => {
+    if (remoteVideoRef.current && incomingStream) {
+      remoteVideoRef.current.srcObject = incomingStream;
+
+      const videoTracks = incomingStream.getVideoTracks();
+      const audioTracks = incomingStream.getAudioTracks();
+
+      setHasVideo(videoTracks.length > 0);
+
+      if (videoTracks.length > 0) {
+        videoTracks.forEach((track, i) => {
+          console.log(`Video track ${i} details:`, {
+            label: track.label,
+            enabled: track.enabled,
+            readyState: track.readyState,
+            muted: track.muted,
+            id: track.id,
+            kind: track.kind,
+          });
+        });
+      }
+
+      const videoElement = remoteVideoRef.current;
+      videoElement.onloadedmetadata = () => {
+        videoElement
+          .play()
+          .then(() => {
+            console.log("Remote video playing successfully");
+          })
+          .catch((error) => {
+            console.error("Remote video failed to play:", error);
+          });
+      };
+
+      videoElement.oncanplay = () => console.log("Remote video can play");
+      videoElement.onplaying = () => console.log("Remote video is playing");
+      videoElement.onpause = () => console.log("Remote video paused");
+      videoElement.onerror = (e) => console.error("Remote video error:", e);
+      videoElement.onstalled = () => console.log("Remote video stalled");
+      videoElement.onwaiting = () => console.log("Remote video waiting");
+    }
+  }, [incomingStream]);
+
+  useEffect(() => {
+    if (peer && iceCandidates.length > 0) {
+      iceCandidates.forEach(async (candidate) => {
+        try {
+          await peer.addIceCandidate(candidate);
+        } catch (err) {
+          console.error("Error adding stored ICE candidate:", err);
+        }
+      });
+      setIceCandidates([]);
+    }
+  }, [peer, iceCandidates]);
 
   useEffect(() => {
     const checkUpvoteStatus = async () => {
@@ -806,12 +814,6 @@ export default function Chat() {
             newUpvoteCount || Math.max(0, (userRef.current?.upvotes || 0) - 1),
         };
       }
-
-      const systemMsg: Imessages = {
-        message: `${fromUser} removed their upvote`,
-        type: "system",
-      };
-      setMessages((prev) => [...prev, systemMsg]);
     };
 
     const handlePeerMicToggleEvent = (data: any) => {
@@ -976,7 +978,7 @@ export default function Chat() {
                       {user
                         ? isOtherUserLoggedIn
                           ? "Both users must be logged in"
-                          : "Peer not logged in"
+                          : "Peer not login"
                         : "Login to upvote"}
                     </div>
                   )}
@@ -1151,12 +1153,17 @@ export default function Chat() {
                 />
               </div>
             </div>
-            <div className="flex flex-col mx-5 h-full">
-              <div className="text-2xl">chat</div>
-              <div className="flex-grow overflow-y-auto">
+            <div className="flex flex-col mx-5 min-h-0 h-full">
+              <div className="text-2xl py-3 flex-shrink-0">chat</div>
+              <div
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+                id="messages-container"
+              >
                 <MessageBox data={messages} />
+                <div ref={messagesEndRef} />
               </div>
-              <div className="mb-4">
+              <div className="mb-4 flex-shrink-0">
                 <form
                   className="relative flex items-center"
                   onSubmit={(e) => {
