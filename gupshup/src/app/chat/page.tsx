@@ -17,6 +17,7 @@ import {
 } from "react-icons/fa";
 import { BiUpvote, BiSolidUpvote } from "react-icons/bi";
 import { votingService } from "../services/api";
+import Reactions from "../components/Reactions";
 
 interface Imessages {
   message: string;
@@ -35,6 +36,7 @@ export default function Chat() {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isReactionOpen, setIsReactionOpen] = useState<boolean>(true);
   const [selfMessage, setSelfMessage] = useState<string>("");
   const [messages, setMessages] = useState<Imessages[]>([]);
   const [roomStatus, setRoomStatus] = useState<string>("searching");
@@ -903,27 +905,46 @@ export default function Chat() {
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-700 mt-4 p-3 bg-gray-50 rounded-lg border">
-                  <div className="font-bold text-center mb-2">Upvotes</div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-center">
-                      <div className="font-medium">You</div>
-                      <div className="text-lg font-bold text-blue-600">
-                        {user?.upvotes || 0}
+                <div className="flex flex-col items-center gap-5 mt-4">
+                  <div className="text-sm text-gray-700 p-3 bg-gray-50 rounded-lg border w-48">
+                    <div className="font-bold text-center mb-2">Upvotes</div>
+                    <div className="flex justify-between items-center">
+                      <div className="text-center">
+                        <div className="font-medium">You</div>
+                        <div className="text-lg font-bold text-[#FDC62E]">
+                          {user?.upvotes || 0}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">Peer</div>
+                        <div className="text-lg font-bold text-[#FDC62E]">
+                          {peerInfo?.upvotes || 0}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="font-medium">Peer</div>
-                      <div className="text-lg font-bold text-green-600">
-                        {peerInfo?.upvotes || 0}
+                    {peerInfo && (
+                      <div className="text-xs text-center mt-2 text-black">
+                        {peerInfo.userName}
                       </div>
-                    </div>
+                    )}
                   </div>
-                  {peerInfo && (
-                    <div className="text-xs text-center mt-2 text-gray-500">
-                      {peerInfo.userName}
-                    </div>
-                  )}
+
+                  <div className="w-48">
+                    <Reactions
+                      onReactionClick={(emoji) => {
+                        console.log("Reaction clicked:", emoji);
+                        const reactionMsg: Imessages = {
+                          message: emoji,
+                          type: "self",
+                        };
+                        setMessages((prev) => [...prev, reactionMsg]);
+                        socket.emit("getMessage", { message: emoji });
+                        setTimeout(() => {
+                          scrollToBottom();
+                        }, 50);
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="text-xs text-gray-500 mt-2 max-w-48 bg-gray-100 p-2 rounded">
@@ -952,7 +973,7 @@ export default function Chat() {
                         isUpvoting
                           ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
                           : hasUpvoted
-                          ? "bg-red-500 hover:bg-red-600 text-white border-red-500 cursor-pointer"
+                          ? "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
                           : "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
                       }`}
                     >
@@ -963,7 +984,7 @@ export default function Chat() {
                         </>
                       ) : hasUpvoted ? (
                         <>
-                          <BiSolidUpvote size={20} />
+                          <BiSolidUpvote size={20} className="text-white" />
                           Remove
                         </>
                       ) : (
@@ -1087,7 +1108,7 @@ export default function Chat() {
                       }}
                     />
                     <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                      Stranger {isPeerVideoOn ? "Video" : "Video OFF"}
+                      Peer {isPeerVideoOn ? "Video" : "Video OFF"}
                     </div>
                     {!isPeerVideoOn && (
                       <div className="absolute inset-0 flex items-center justify-center bg-[#FDC62E] text-black rounded-md">
