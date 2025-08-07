@@ -193,6 +193,15 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("getReaction", (data: any) => {
+    const { emoji } = data;
+    if (currentRoomId) {
+      socket.to(currentRoomId).emit("sendReaction", {
+        emoji: emoji,
+      });
+    }
+  });
+
   socket.on("leaveRoom", async () => {
     if (currentRoomId && currentUserId) {
       try {

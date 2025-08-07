@@ -36,6 +36,8 @@ export default function Chat() {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const selfReactionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const peerReactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isReactionOpen, setIsReactionOpen] = useState<boolean>(true);
   const [selfMessage, setSelfMessage] = useState<string>("");
   const [messages, setMessages] = useState<Imessages[]>([]);
@@ -55,6 +57,8 @@ export default function Chat() {
   const [peerInfo, setPeerInfo] = useState<PeerInfo | null>(null);
   const [hasUpvoted, setHasUpvoted] = useState<boolean>(false);
   const [isUpvoting, setIsUpvoting] = useState<boolean>(false);
+  const [selfReaction, setSelfReaction] = useState<string>("");
+  const [peerReaction, setPeerReaction] = useState<string>("");
 
   const [isOtherUserLoggedIn, setIsOtherUserLoggedIn] =
     useState<boolean>(false);
@@ -294,6 +298,18 @@ export default function Chat() {
 
     return newPeer;
   }, []);
+
+  const handleSelfReaction = (emoji: string) => {
+    setSelfReaction(emoji);
+    
+    if (selfReactionTimerRef.current) {
+      clearTimeout(selfReactionTimerRef.current);
+    }
+    
+    selfReactionTimerRef.current = setTimeout(() => {
+      setSelfReaction("");
+    }, 3000);
+  };
 
   const sendCallReq = async () => {
     try {
@@ -826,6 +842,19 @@ export default function Chat() {
       handlePeerVidToggle(data);
     };
 
+    const handlePeerReaction = (data: any) => {
+    const { emoji } = data;
+    setPeerReaction(emoji);
+    
+    if (peerReactionTimerRef.current) {
+      clearTimeout(peerReactionTimerRef.current);
+    }
+
+    peerReactionTimerRef.current = setTimeout(() => {
+      setPeerReaction("");
+    }, 3000);
+  };
+
     // Set up all the event listeners
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
@@ -842,6 +871,7 @@ export default function Chat() {
     socket.on("upvoteRemoved", handleUpvoteRemoved);
     socket.on("peerMicToggled", handlePeerMicToggleEvent);
     socket.on("peerVidToggled", handlePeerVidToggleEvent);
+    socket.on("sendReaction", handlePeerReaction);
 
     // Clean up function
     return () => {
@@ -861,6 +891,7 @@ export default function Chat() {
       socket.off("upvoteRemoved", handleUpvoteRemoved);
       socket.off("peerMicToggled", handlePeerMicToggleEvent);
       socket.off("peerVidToggled", handlePeerVidToggleEvent);
+      socket.off("sendReaction", handlePeerReaction);
 
       if (peerRef.current) {
         peerRef.current.close();
@@ -885,6 +916,17 @@ export default function Chat() {
 
   useEffect(() => {
     getUserMedia();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (selfReactionTimerRef.current) {
+        clearTimeout(selfReactionTimerRef.current);
+      }
+      if (peerReactionTimerRef.current) {
+        clearTimeout(peerReactionTimerRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -933,21 +975,14 @@ export default function Chat() {
                     <Reactions
                       onReactionClick={(emoji) => {
                         console.log("Reaction clicked:", emoji);
-                        const reactionMsg: Imessages = {
-                          message: emoji,
-                          type: "self",
-                        };
-                        setMessages((prev) => [...prev, reactionMsg]);
-                        socket.emit("getMessage", { message: emoji });
-                        setTimeout(() => {
-                          scrollToBottom();
-                        }, 50);
+                        handleSelfReaction(emoji);
+                        socket.emit("getReaction", { emoji });
                       }}
                     />
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500 mt-2 max-w-48 bg-gray-100 p-2 rounded">
+                {/* <div className="text-xs text-gray-500 mt-2 max-w-48 bg-gray-100 p-2 rounded">
                   <div className="font-bold">Debug:</div>
                   <div>
                     My: Video{isVideoOn ? "ON" : "OFF"} Mic
@@ -960,7 +995,7 @@ export default function Chat() {
                   <div>Room: {roomStatus}</div>
                   <div>Conn: {connectionState}</div>
                   <div>Stream: {incomingStream ? "YES" : "NO"}</div>
-                </div>
+                </div> */}
               </div>
 
               <div className="flex flex-col gap-5">
@@ -1072,10 +1107,24 @@ export default function Chat() {
                         className="object-cover rounded-full"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
-                        {user?.userName?.charAt(0)?.toUpperCase() || "U"}
+                      <div className="w-full h-full bg-[#FDC62E] flex items-center justify-center">
+                        <Image
+                          src={"./gupshupLogo.svg"}
+                          alt="Profile"
+                          width={70}
+                          height={70}
+                          className="object-cover bg-white rounded-full"
+                        />
                       </div>
                     )}
+                  </div>
+                )}
+
+                {selfReaction && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <div className="text-xl bg-white rounded-full animate-bounce p-2 shadow-lg">
+                      {selfReaction}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1134,6 +1183,13 @@ export default function Chat() {
                         : connectionState === "failed"
                         ? "Connection failed, try next room"
                         : "Waiting for video..."}
+                    </div>
+                  </div>
+                )}
+                {peerReaction && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <div className="text-xl bg-white rounded-full animate-bounce p-2 shadow-lg">
+                      {peerReaction}
                     </div>
                   </div>
                 )}
