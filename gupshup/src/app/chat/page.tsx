@@ -36,6 +36,8 @@ export default function Chat() {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const localVideoContainerRef = useRef<HTMLDivElement>(null);
+  const peerVideoContainerRef = useRef<HTMLDivElement>(null);
   const selfReactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const peerReactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isReactionOpen, setIsReactionOpen] = useState<boolean>(true);
@@ -301,11 +303,11 @@ export default function Chat() {
 
   const handleSelfReaction = (emoji: string) => {
     setSelfReaction(emoji);
-    
+
     if (selfReactionTimerRef.current) {
       clearTimeout(selfReactionTimerRef.current);
     }
-    
+
     selfReactionTimerRef.current = setTimeout(() => {
       setSelfReaction("");
     }, 3000);
@@ -444,6 +446,49 @@ export default function Chat() {
       }
     }
   };
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === " ") {
+        event.preventDefault();
+      }
+
+      switch (event.key) {
+        case " ":
+          handleNextRoom();
+          break;
+        case "v":
+          handleVideoToggle();
+          break;
+        case "m":
+          handleMicToggle();
+          break;
+      }
+    };
+
+    const localContainer = localVideoContainerRef.current;
+    const remoteContainer = peerVideoContainerRef.current;
+
+    if(localContainer){
+      localContainer.addEventListener('keydown', handleKeyPress)
+      localContainer.tabIndex = 0;
+    }
+
+    if(remoteContainer){
+      remoteContainer.addEventListener('keydown', handleKeyPress)
+      remoteContainer.tabIndex = 0;
+    }
+
+    return ()=>{
+      if(localContainer){
+      localContainer.removeEventListener('keydown', handleKeyPress)
+    }
+
+    if(remoteContainer){
+      remoteContainer.removeEventListener('keydown', handleKeyPress)
+    }
+    }
+  }, [handleNextRoom, handleVideoToggle, handleMicToggle]);
 
   useEffect(() => {
     scrollToBottom();
@@ -843,17 +888,17 @@ export default function Chat() {
     };
 
     const handlePeerReaction = (data: any) => {
-    const { emoji } = data;
-    setPeerReaction(emoji);
-    
-    if (peerReactionTimerRef.current) {
-      clearTimeout(peerReactionTimerRef.current);
-    }
+      const { emoji } = data;
+      setPeerReaction(emoji);
 
-    peerReactionTimerRef.current = setTimeout(() => {
-      setPeerReaction("");
-    }, 3000);
-  };
+      if (peerReactionTimerRef.current) {
+        clearTimeout(peerReactionTimerRef.current);
+      }
+
+      peerReactionTimerRef.current = setTimeout(() => {
+        setPeerReaction("");
+      }, 3000);
+    };
 
     // Set up all the event listeners
     socket.on("connect", handleConnect);
@@ -1082,7 +1127,7 @@ export default function Chat() {
               </div>
             </div>
             <div className="w-full h-full mx-5 pb-5">
-              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative">
+              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative" ref={localVideoContainerRef} tabIndex={0}>
                 {isVideoOn ? (
                   <>
                     <video
@@ -1129,7 +1174,7 @@ export default function Chat() {
                 )}
               </div>
 
-              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative">
+              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative" ref={peerVideoContainerRef} tabIndex={0}>
                 {incomingStream ? (
                   <>
                     <video
