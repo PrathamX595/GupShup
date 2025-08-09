@@ -67,6 +67,7 @@ export default function Chat() {
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const chatRef = useRef<HTMLFormElement>(null);
 
   const streamRef = useRef<MediaStream | undefined>(undefined);
   const peerRef = useRef<RTCPeerConnection | undefined>(undefined);
@@ -448,6 +449,12 @@ export default function Chat() {
   };
 
   useEffect(() => {
+    const localContainer = localVideoContainerRef.current;
+    const remoteContainer = peerVideoContainerRef.current;
+    const inputElement = chatRef.current?.querySelector(
+      'input[type="text"]'
+    ) as HTMLInputElement;
+
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === " ") {
         event.preventDefault();
@@ -463,31 +470,48 @@ export default function Chat() {
         case "m":
           handleMicToggle();
           break;
+        case "/":
+          event.preventDefault();
+          inputElement?.focus();
+          break;
       }
     };
 
-    const localContainer = localVideoContainerRef.current;
-    const remoteContainer = peerVideoContainerRef.current;
+    const handleBackToVid = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case "Escape":
+          localContainer?.focus();
+          break;
+      }
+    };
 
-    if(localContainer){
-      localContainer.addEventListener('keydown', handleKeyPress)
+    if (inputElement) {
+      inputElement.addEventListener("keydown", handleBackToVid);
+    }
+
+    if (localContainer) {
+      localContainer.addEventListener("keydown", handleKeyPress);
       localContainer.tabIndex = 0;
     }
 
-    if(remoteContainer){
-      remoteContainer.addEventListener('keydown', handleKeyPress)
+    if (remoteContainer) {
+      remoteContainer.addEventListener("keydown", handleKeyPress);
       remoteContainer.tabIndex = 0;
     }
 
-    return ()=>{
-      if(localContainer){
-      localContainer.removeEventListener('keydown', handleKeyPress)
-    }
+    return () => {
+      if (inputElement) {
+        inputElement.removeEventListener("keydown", handleBackToVid);
+      }
 
-    if(remoteContainer){
-      remoteContainer.removeEventListener('keydown', handleKeyPress)
-    }
-    }
+      if (localContainer) {
+        localContainer.removeEventListener("keydown", handleKeyPress);
+      }
+
+      if (remoteContainer) {
+        remoteContainer.removeEventListener("keydown", handleKeyPress);
+      }
+    };
   }, [handleNextRoom, handleVideoToggle, handleMicToggle]);
 
   useEffect(() => {
@@ -1127,7 +1151,11 @@ export default function Chat() {
               </div>
             </div>
             <div className="w-full h-full mx-5 pb-5">
-              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative" ref={localVideoContainerRef} tabIndex={0}>
+              <div
+                className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative"
+                ref={localVideoContainerRef}
+                tabIndex={0}
+              >
                 {isVideoOn ? (
                   <>
                     <video
@@ -1174,7 +1202,11 @@ export default function Chat() {
                 )}
               </div>
 
-              <div className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative" ref={peerVideoContainerRef} tabIndex={0}>
+              <div
+                className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative"
+                ref={peerVideoContainerRef}
+                tabIndex={0}
+              >
                 {incomingStream ? (
                   <>
                     <video
@@ -1287,6 +1319,7 @@ export default function Chat() {
               </div>
               <div className="mb-4 flex-shrink-0">
                 <form
+                  ref={chatRef}
                   className="relative flex items-center"
                   onSubmit={(e) => {
                     e.preventDefault();
