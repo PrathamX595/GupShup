@@ -14,7 +14,7 @@ export default function SettingsLayout({
     { "Community Guidelines": "/guide" },
   ];
 
-  const [selected, setSelected] = useState<string>("Account");
+  const [selected, setSelected] = useState<string>("");
 
   const handleSelected = (label: string) => {
     setSelected(label);
@@ -46,7 +46,7 @@ export default function SettingsLayout({
                       <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#FDC62E]"></div>
                     )}
                     <Link
-                      href={`/settings`}
+                      href={`/settings${href}`}
                       className={`block text-lg py-3 px-6 hover:bg-gray-50 transition-colors ${
                         selected === label 
                           ? "bg-[#F5F5F5] text-black font-medium" 
@@ -67,8 +67,8 @@ export default function SettingsLayout({
           </div>
         </div>
         <div className="flex flex-col w-full">
-          <div className="text-2xl border-b py-5 px-5">{`Settings > ${selected}`}</div>
-          <div className="flex-grow p-5">{children}</div>
+          <div className="text-2xl border-b py-5 px-5">{`Settings ${selected ? `>` : ``} ${selected}`}</div>
+          <div className="flex-grow p-5 min-h-full">{children}</div>
         </div>
       </div>
     </div>

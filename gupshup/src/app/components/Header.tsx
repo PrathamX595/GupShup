@@ -59,7 +59,7 @@ export function Header() {
                 <div className="text-xs text-gray-500">{user.email}</div>
               </div>
               <DropdownMenuItem
-                onClick={() => router.push("/settings")}
+                onClick={() => router.push("/settings/account")}
                 className="flex items-center gap-2"
               >
                 <svg
