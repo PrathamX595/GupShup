@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { log } from "console";
 
 export default function SettingsLayout({
   children,
@@ -13,8 +15,25 @@ export default function SettingsLayout({
     { "Terms of Service": "/terms" },
     { "Community Guidelines": "/guide" },
   ];
+  const pathname = usePathname();
+  const query = pathname.split("/")[2];
+  
+  const getDefSelection = (query: string) => {
+    switch (query) {
+      case "account":
+        return "Account";
+      case "policy":
+        return "Privacy Policy";
+      case "terms":
+        return "Terms of Service";
+      case "guide":
+        return "Community Guidelines";
+      default:
+        return "";
+    }
+  };
 
-  const [selected, setSelected] = useState<string>("");
+  const [selected, setSelected] = useState<string>(getDefSelection(query));
 
   const handleSelected = (label: string) => {
     setSelected(label);
@@ -48,8 +67,8 @@ export default function SettingsLayout({
                     <Link
                       href={`/settings${href}`}
                       className={`block text-lg py-3 px-6 hover:bg-gray-50 transition-colors ${
-                        selected === label 
-                          ? "bg-[#F5F5F5] text-black font-medium" 
+                        selected === label
+                          ? "bg-[#F5F5F5] text-black font-medium"
                           : "text-gray-700 hover:text-black"
                       }`}
                       onClick={() => handleSelected(label)}
@@ -61,13 +80,15 @@ export default function SettingsLayout({
               })}
             </div>
             <div className="p-6 text-center text-sm text-gray-400">
-                <hr />
-                <div className="mt-3">© {new Date().getFullYear()} GupShup</div>
+              <hr />
+              <div className="mt-3">© {new Date().getFullYear()} GupShup</div>
             </div>
           </div>
         </div>
         <div className="flex flex-col w-full">
-          <div className="text-2xl border-b py-5 px-5">{`Settings ${selected ? `>` : ``} ${selected}`}</div>
+          <div className="text-2xl border-b py-5 px-5">{`Settings ${
+            selected ? `>` : ``
+          } ${selected}`}</div>
           <div className="flex-grow p-5 min-h-full">{children}</div>
         </div>
       </div>
