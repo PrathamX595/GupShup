@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { log } from "console";
 
 export default function SettingsLayout({
   children,
@@ -85,11 +84,13 @@ export default function SettingsLayout({
             </div>
           </div>
         </div>
-        <div className="flex flex-col w-full">
-          <div className="text-2xl border-b py-5 px-5">{`Settings ${
-            selected ? `>` : ``
-          } ${selected}`}</div>
-          <div className="flex-grow p-5 min-h-full">{children}</div>
+        <div className="flex flex-col w-full h-full">
+          <div className="text-2xl border-b py-5 px-5 flex-shrink-0">
+            {`Settings > ${selected}`}
+          </div>
+          <div className="flex-grow overflow-y-auto">
+            {children}
+          </div>
         </div>
       </div>
     </div>
