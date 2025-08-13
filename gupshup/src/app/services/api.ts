@@ -51,6 +51,14 @@ const authService = {
       throw error;
     }
   },
+  deleteAccount: async () => {
+    try {
+      const res = await api.delete(`/api/auth/delete`);
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 const votingService = {

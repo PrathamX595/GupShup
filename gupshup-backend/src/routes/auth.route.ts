@@ -1,7 +1,14 @@
 import { Router } from "express";
 import passport from "passport";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { googleLogin, login, logout, registerUser, verifyUser } from "../controllers/user.controller";
+import {
+  googleLogin,
+  login,
+  logout,
+  registerUser,
+  verifyUser,
+  deleteUser
+} from "../controllers/user.controller";
 
 const router = Router();
 
@@ -30,6 +37,10 @@ router.route("/login").post((req, res, next) => {
 
 router.route("/verify").get((req, res, next) => {
   verifyUser(req, res).catch(next);
+});
+
+router.route("/delete").delete(verifyJWT,(req, res, next) => {
+  deleteUser(req, res).catch(next);
 });
 
 export default router;

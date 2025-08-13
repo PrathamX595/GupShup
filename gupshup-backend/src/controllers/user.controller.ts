@@ -619,6 +619,41 @@ const verifyUser = async (req: Request, res: Response) => {
   }
 };
 
+const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const currentUser = (req as any).user as IUser;
+    if (!currentUser || !currentUser._id) {
+      throw new ErrorResponse(401, "User not authenticated");
+    }
+
+    const user = await User.findById(currentUser._id);
+    if (!user) {
+      throw new ErrorResponse(404, "User not found");
+    }
+
+    await User.findByIdAndDelete(currentUser._id);
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+    } as const;
+
+    return res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json(new ApiResponse(200, {}, "User deleted successfully"));
+  } catch (error) {
+    console.error("Delete user error:", error);
+    if (error instanceof ErrorResponse) {
+      throw error;
+    }
+    throw new ErrorResponse(500, `Error deleting user: ${error}`);
+  }
+};
+
 export {
   generateAccessAndRefreshToken,
   addUpvote,
@@ -635,4 +670,5 @@ export {
   registerUser,
   verifyUser,
   checkUpvoteStatus,
+  deleteUser,
 };

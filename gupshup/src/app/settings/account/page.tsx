@@ -3,14 +3,18 @@ import useAuth from "@/app/hooks/useAuth";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { authService } from "@/app/services/api";
 
 function AccountPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
   const [hasUsernameChanged, setHasUsernameChanged] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -34,9 +38,78 @@ function AccountPage() {
     setHasUsernameChanged(false);
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      console.log("Account deletion requested");
+
+
+  //Implement delete modal here
+  const handleDeleteAccount = async () => {
+    if (!user) {
+      console.error("No user found");
+      return;
+    }
+
+    const firstConfirm = window.confirm(
+      "Are you sure you want to delete your account? This action cannot be undone."
+    );
+
+    if (!firstConfirm) {
+      return;
+    }
+
+    const secondConfirm = window.confirm(
+      `⚠️ FINAL WARNING ⚠️\n\nDeleting your account will:\n• Remove all your data permanently\n• Delete your ${user.upvotes || 0} upvotes\n• Remove your chat history\n• This CANNOT be undone\n\nDo you want to proceed?`
+    );
+
+    if (!secondConfirm) {
+      return;
+    }
+
+    const usernameConfirm = prompt(
+      `To confirm deletion, please type your username: "${user.userName}"`
+    );
+
+    if (usernameConfirm !== user.userName) {
+      alert("Username confirmation failed. Account deletion cancelled.");
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      console.log("=== DELETE ACCOUNT DEBUG START ===");
+      console.log("User data:", user);
+      console.log("Attempting to delete account...");
+      
+      const response = await authService.deleteAccount();
+      
+      console.log("=== DELETE ACCOUNT SUCCESS ===");
+      console.log("Response:", response);
+      
+      alert("Your account has been successfully deleted. You will be redirected to the home page.");
+      
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      router.push("/");
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+      
+    } catch (error: any) {
+      console.log("=== DELETE ACCOUNT ERROR ===");
+      console.error("Account deletion failed:", error);
+      console.error("Error response:", error.response);
+      
+      let errorMessage = "Failed to delete account. Please try again.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Account deletion failed: ${errorMessage}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -82,16 +155,16 @@ function AccountPage() {
             <div>
               {user && (
                 <>
-                <label htmlFor="avatar-upload" className="text-[#FDC62E] cursor-pointer hover:text-[#f5bb1f] transition-colors">
-                  Upload new
-                </label>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
+                  <label htmlFor="avatar-upload" className="text-[#FDC62E] cursor-pointer hover:text-[#f5bb1f] transition-colors">
+                    Upload new
+                  </label>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
                 </>
               )}
               <div className="text-sm text-gray-600">Recommended size: 400x400px</div>
@@ -99,7 +172,7 @@ function AccountPage() {
           </div>
           
           {user && (
-            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg">
+            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg font-semibold">
               {user.upvotes || 0} Upvotes
             </div>
           )}
@@ -215,12 +288,30 @@ function AccountPage() {
                 <hr className="flex-1 border-red-300" />
               </div>
 
-              <button
-                onClick={handleDeleteAccount}
-                className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
-              >
-                Delete Account
-              </button>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                <h3 className="text-red-800 font-semibold mb-2">Delete Account</h3>
+                <p className="text-red-700 text-sm mb-4">
+                  This action will permanently delete your account, including all your data, upvotes, and chat history. This cannot be undone.
+                </p>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  className={`${
+                    isDeleting
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"
+                  } text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2`}
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Deleting Account...
+                    </>
+                  ) : (
+                    "Delete Account Permanently"
+                  )}
+                </button>
+              </div>
             </div>
           </>
         ) : (
