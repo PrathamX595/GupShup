@@ -66,6 +66,21 @@ const authService = {
       throw error;
     }
   },
+  updateAvatar: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await api.put("/api/auth/update-avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
   changePassword: async (oldPassword: string, newPassword: string) => {
     try {
       const response = await api.put("/api/auth/update-pass", {

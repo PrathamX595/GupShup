@@ -5,6 +5,7 @@ import { Button } from "./Button";
 import useAuth from "../hooks/useAuth";
 import Image from "next/image";
 import { authService } from "../services/api";
+import { getAvatarUrl } from "../services/avatar";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -28,7 +29,7 @@ export function Header() {
     <div className="w-10 h-10 rounded-full overflow-hidden hover:ring-2 hover:ring-gray-300 transition-all">
       {user?.avatar ? (
         <Image
-          src={user.avatar}
+          src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
           alt="Profile"
           width={40}
           height={40}

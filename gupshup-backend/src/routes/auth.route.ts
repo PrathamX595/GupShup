@@ -1,6 +1,7 @@
 import { Router } from "express";
 import passport from "passport";
 import { verifyJWT } from "../middlewares/auth.middleware";
+import { upload } from "../config/multer";
 import {
   googleLogin,
   login,
@@ -9,7 +10,8 @@ import {
   verifyUser,
   deleteUser,
   updateDetails,
-  changePassword
+  changePassword,
+  updateAvatar,
 } from "../controllers/user.controller";
 
 const router = Router();
@@ -41,7 +43,7 @@ router.route("/verify").get((req, res, next) => {
   verifyUser(req, res).catch(next);
 });
 
-router.route("/delete").delete(verifyJWT,(req, res, next) => {
+router.route("/delete").delete(verifyJWT, (req, res, next) => {
   deleteUser(req, res).catch(next);
 });
 
@@ -52,5 +54,11 @@ router.route("/update").put(verifyJWT, (req, res, next) => {
 router.route("/update-pass").put(verifyJWT, (req, res, next) => {
   changePassword(req, res).catch(next);
 });
+
+router
+  .route("/update-avatar")
+  .put(verifyJWT, upload.single("avatar"), (req, res, next) => {
+    updateAvatar(req, res).catch(next);
+  });
 
 export default router;

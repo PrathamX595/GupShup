@@ -18,6 +18,7 @@ import {
 import { BiUpvote, BiSolidUpvote } from "react-icons/bi";
 import { votingService } from "../services/api";
 import Reactions from "../components/Reactions";
+import { getAvatarUrl } from "../services/avatar";
 
 interface Imessages {
   message: string;
@@ -1173,7 +1174,7 @@ export default function Chat() {
                   <div className="w-full h-full flex flex-col justify-center items-center">
                     {user?.avatar ? (
                       <Image
-                        src={user.avatar}
+                        src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
                         alt="Profile"
                         width={70}
                         height={70}
@@ -1280,7 +1281,7 @@ export default function Chat() {
                   <div className="w-10 h-10 rounded-full overflow-hidden">
                     {user.avatar ? (
                       <Image
-                        src={user.avatar}
+                        src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
                         alt="Profile"
                         width={40}
                         height={40}

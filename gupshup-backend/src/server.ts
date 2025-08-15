@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db";
 import healthCheckRouter from "../src/routes/healthCheck.route";
+import path from "path";
 import authRouter from "../src/routes/auth.route";
 import voteRouter from "../src/routes/upvote.route";
 import passport from "passport";
@@ -392,6 +393,8 @@ app.get("/", (request: Request, response: Response) => {
 app.use("/api/healthCheck", healthCheckRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/upvote", voteRouter);
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 
 redis.connect().catch(console.error);
 

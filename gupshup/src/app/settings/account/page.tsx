@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/services/api";
+import { getAvatarUrl } from "@/app/services/avatar";
 
 function AccountPage() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ function AccountPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -97,9 +99,7 @@ function AccountPage() {
 
     try {
       const response = await authService.updateDetails(username, user.email);
-
       setHasUsernameChanged(false);
-
       window.location.reload();
     } catch (error: any) {
       let errorMessage = "Failed to update username. Please try again.";
@@ -117,7 +117,6 @@ function AccountPage() {
     }
   };
 
-  //Implement delete modal here
   const handleDeleteAccount = async () => {
     if (!user) {
       console.error("No user found");
@@ -154,15 +153,7 @@ function AccountPage() {
     setIsDeleting(true);
 
     try {
-      console.log("=== DELETE ACCOUNT DEBUG START ===");
-      console.log("User data:", user);
-      console.log("Attempting to delete account...");
-
       const response = await authService.deleteAccount();
-
-      console.log("=== DELETE ACCOUNT SUCCESS ===");
-      console.log("Response:", response);
-
       alert(
         "Your account has been successfully deleted. You will be redirected to the home page."
       );
@@ -175,10 +166,6 @@ function AccountPage() {
         window.location.reload();
       }, 100);
     } catch (error: any) {
-      console.log("=== DELETE ACCOUNT ERROR ===");
-      console.error("Account deletion failed:", error);
-      console.error("Error response:", error.response);
-
       let errorMessage = "Failed to delete account. Please try again.";
 
       if (error.response?.data?.message) {
@@ -193,10 +180,40 @@ function AccountPage() {
     }
   };
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      console.log("Avatar upload:", file);
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+
+    try {
+      const response = await authService.updateAvatar(file);
+      alert("Profile picture updated successfully!");
+
+      window.location.reload();
+    } catch (error: any) {
+      let errorMessage = "Failed to update profile picture. Please try again.";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      alert(`Avatar upload failed: ${errorMessage}`);
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = "";
     }
   };
 
@@ -206,13 +223,13 @@ function AccountPage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="w-20 h-20 rounded-full overflow-hidden relative">
+              <div className="w-20 h-20 rounded-full overflow-hidden relative group">
                 {user.avatar ? (
                   <Image
-                    src={user.avatar}
+                    src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
                     alt="Profile"
-                    width={60}
-                    height={60}
+                    width={80}
+                    height={80}
                     className="object-cover w-full h-full"
                   />
                 ) : (
@@ -237,27 +254,39 @@ function AccountPage() {
                 <>
                   <label
                     htmlFor="avatar-upload"
-                    className="text-[#FDC62E] cursor-pointer hover:text-[#f5bb1f] transition-colors"
+                    className={`${
+                      isUploadingAvatar
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-[#FDC62E] cursor-pointer hover:text-[#f5bb1f]"
+                    } transition-colors block`}
                   >
-                    Upload new
+                    {isUploadingAvatar ? (
+                      <span className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                        Uploading...
+                      </span>
+                    ) : (
+                      "Upload new"
+                    )}
                   </label>
                   <input
                     id="avatar-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleAvatarUpload}
+                    disabled={isUploadingAvatar}
                     className="hidden"
                   />
                 </>
               )}
               <div className="text-sm text-gray-600">
-                Recommended size: 400x400px
+                Recommended size: 400x400px (Max 5MB)
               </div>
             </div>
           </div>
 
           {user && (
-            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg">
+            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg font-semibold">
               {user.upvotes || 0} Upvotes
             </div>
           )}
@@ -275,14 +304,30 @@ function AccountPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
+                    disabled={isUpdatingUsername}
+                    className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Enter username"
+                    minLength={3}
+                    maxLength={30}
                   />
                   {hasUsernameChanged && (
                     <button
                       onClick={handleUsernameChange}
-                      className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg font-medium hover:bg-[#f5bb1f] transition-colors text-sm"
+                      disabled={isUpdatingUsername}
+                      className={`${
+                        isUpdatingUsername
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-[#FDC62E] hover:bg-[#f5bb1f]"
+                      } text-black px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2`}
                     >
-                      Apply Changes
+                      {isUpdatingUsername ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-black"></div>
+                          Updating...
+                        </>
+                      ) : (
+                        "Apply Changes"
+                      )}
                     </button>
                   )}
                 </div>
@@ -328,7 +373,10 @@ function AccountPage() {
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
+                      disabled={isChangingPassword}
+                      className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50"
+                      placeholder="Enter current password"
+                      required
                     />
                   </div>
 
@@ -341,7 +389,11 @@ function AccountPage() {
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
+                        disabled={isChangingPassword}
+                        className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50"
+                        placeholder="Enter new password"
+                        minLength={6}
+                        required
                       />
                     </div>
 
@@ -353,7 +405,11 @@ function AccountPage() {
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
+                        disabled={isChangingPassword}
+                        className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50"
+                        placeholder="Confirm new password"
+                        minLength={6}
+                        required
                       />
                     </div>
                   </div>
@@ -361,9 +417,21 @@ function AccountPage() {
 
                 <button
                   type="submit"
-                  className="bg-[#FDC62E] text-black px-6 py-3 rounded-lg font-medium hover:bg-[#f5bb1f] transition-colors"
+                  disabled={isChangingPassword}
+                  className={`${
+                    isChangingPassword
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-[#FDC62E] hover:bg-[#f5bb1f]"
+                  } text-black px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2`}
                 >
-                  Change password
+                  {isChangingPassword ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                      Changing Password...
+                    </>
+                  ) : (
+                    "Change Password"
+                  )}
                 </button>
               </form>
             </div>

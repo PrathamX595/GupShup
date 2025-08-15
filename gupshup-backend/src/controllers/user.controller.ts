@@ -3,6 +3,8 @@ import { IUser, User } from "../models/User";
 import ErrorResponse from "../utils/errorResponse";
 import { ApiResponse } from "../utils/apiResponse";
 import jwt from "jsonwebtoken";
+import path from "path";
+import fs from "fs";
 
 const frontendurl = process.env.FRONTEND_URL;
 
@@ -654,6 +656,48 @@ const deleteUser = async (req: Request, res: Response) => {
   }
 };
 
+const updateAvatar = async (req: Request, res: Response) => {
+  try {
+    const currentUser = (req as any).user as IUser;
+    if (!currentUser || !currentUser._id) {
+      throw new ErrorResponse(401, "User not authenticated");
+    }
+
+    if (!req.file) {
+      throw new ErrorResponse(400, "No file uploaded");
+    }
+
+    const user = await User.findById(currentUser._id);
+    if (user?.avatar) {
+      const oldAvatarPath = path.join(__dirname, '../../uploads/avatars', path.basename(user.avatar));
+      if (fs.existsSync(oldAvatarPath)) {
+        fs.unlinkSync(oldAvatarPath);
+      }
+    }
+
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const updatedUser = await User.findByIdAndUpdate(
+      currentUser._id,
+      { avatar: avatarUrl },
+      { new: true }
+    ).select("-password -refreshToken");
+
+    if (!updatedUser) {
+      throw new ErrorResponse(404, "User not found");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"));
+  } catch (error) {
+    console.error("Update avatar error:", error);
+    if (error instanceof ErrorResponse) {
+      throw error;
+    }
+    throw new ErrorResponse(500, `Error updating avatar: ${error}`);
+  }
+};
+
 export {
   generateAccessAndRefreshToken,
   addUpvote,
@@ -671,4 +715,5 @@ export {
   verifyUser,
   checkUpvoteStatus,
   deleteUser,
+  updateAvatar
 };
