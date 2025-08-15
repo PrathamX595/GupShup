@@ -7,7 +7,9 @@ import {
   logout,
   registerUser,
   verifyUser,
-  deleteUser
+  deleteUser,
+  updateDetails,
+  changePassword
 } from "../controllers/user.controller";
 
 const router = Router();
@@ -41,6 +43,14 @@ router.route("/verify").get((req, res, next) => {
 
 router.route("/delete").delete(verifyJWT,(req, res, next) => {
   deleteUser(req, res).catch(next);
+});
+
+router.route("/update").put(verifyJWT, (req, res, next) => {
+  updateDetails(req, res).catch(next);
+});
+
+router.route("/update-pass").put(verifyJWT, (req, res, next) => {
+  changePassword(req, res).catch(next);
 });
 
 export default router;

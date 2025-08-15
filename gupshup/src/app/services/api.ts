@@ -51,10 +51,28 @@ const authService = {
       throw error;
     }
   },
+  updateDetails: async (userName: string, email: string) => {
+    const response = await api.put("/api/auth/update", {
+      userName,
+      email,
+    });
+    return response;
+  },
   deleteAccount: async () => {
     try {
       const res = await api.delete(`/api/auth/delete`);
       return res;
+    } catch (error) {
+      throw error;
+    }
+  },
+  changePassword: async (oldPassword: string, newPassword: string) => {
+    try {
+      const response = await api.put("/api/auth/update-pass", {
+        oldPassword,
+        newPassword,
+      });
+      return response;
     } catch (error) {
       throw error;
     }

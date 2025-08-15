@@ -15,6 +15,8 @@ function AccountPage() {
   const [username, setUsername] = useState("");
   const [hasUsernameChanged, setHasUsernameChanged] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -28,17 +30,92 @@ function AccountPage() {
     }
   }, [username, user]);
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Password change requested");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert("Please fill in all password fields.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("New password and confirm password do not match.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert("New password must be at least 6 characters long.");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      alert("New password must be different from current password.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const response = await authService.changePassword(
+        currentPassword,
+        newPassword
+      );
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      alert("Password changed successfully!");
+    } catch (error: any) {
+      let errorMessage = "Failed to change password. Please try again.";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setCurrentPassword("");
+
+      alert(`Password change failed: ${errorMessage}`);
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
-  const handleUsernameChange = () => {
-    console.log("Username change requested:", username);
-    setHasUsernameChanged(false);
+  const handleUsernameChange = async () => {
+    if (!user || !username.trim()) {
+      alert("Please enter a valid username.");
+      return;
+    }
+
+    if (username === user.userName) {
+      setHasUsernameChanged(false);
+      return;
+    }
+
+    setIsUpdatingUsername(true);
+
+    try {
+      const response = await authService.updateDetails(username, user.email);
+
+      setHasUsernameChanged(false);
+
+      window.location.reload();
+    } catch (error: any) {
+      let errorMessage = "Failed to update username. Please try again.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      alert(`Username update failed: ${errorMessage}`);
+      setUsername(user.userName || "");
+      setHasUsernameChanged(false);
+    } finally {
+      setIsUpdatingUsername(false);
+    }
   };
-
-
 
   //Implement delete modal here
   const handleDeleteAccount = async () => {
@@ -56,7 +133,9 @@ function AccountPage() {
     }
 
     const secondConfirm = window.confirm(
-      `⚠️ FINAL WARNING ⚠️\n\nDeleting your account will:\n• Remove all your data permanently\n• Delete your ${user.upvotes || 0} upvotes\n• Remove your chat history\n• This CANNOT be undone\n\nDo you want to proceed?`
+      `⚠️ FINAL WARNING ⚠️\n\nDeleting your account will:\n• Remove all your data permanently\n• Delete your ${
+        user.upvotes || 0
+      } upvotes\n• Remove your chat history\n• This CANNOT be undone\n\nDo you want to proceed?`
     );
 
     if (!secondConfirm) {
@@ -78,35 +157,36 @@ function AccountPage() {
       console.log("=== DELETE ACCOUNT DEBUG START ===");
       console.log("User data:", user);
       console.log("Attempting to delete account...");
-      
+
       const response = await authService.deleteAccount();
-      
+
       console.log("=== DELETE ACCOUNT SUCCESS ===");
       console.log("Response:", response);
-      
-      alert("Your account has been successfully deleted. You will be redirected to the home page.");
-      
+
+      alert(
+        "Your account has been successfully deleted. You will be redirected to the home page."
+      );
+
       localStorage.clear();
       sessionStorage.clear();
-      
+
       router.push("/");
       setTimeout(() => {
         window.location.reload();
       }, 100);
-      
     } catch (error: any) {
       console.log("=== DELETE ACCOUNT ERROR ===");
       console.error("Account deletion failed:", error);
       console.error("Error response:", error.response);
-      
+
       let errorMessage = "Failed to delete account. Please try again.";
-      
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       alert(`Account deletion failed: ${errorMessage}`);
     } finally {
       setIsDeleting(false);
@@ -151,11 +231,14 @@ function AccountPage() {
                 />
               </div>
             )}
-            
+
             <div>
               {user && (
                 <>
-                  <label htmlFor="avatar-upload" className="text-[#FDC62E] cursor-pointer hover:text-[#f5bb1f] transition-colors">
+                  <label
+                    htmlFor="avatar-upload"
+                    className="text-[#FDC62E] cursor-pointer hover:text-[#f5bb1f] transition-colors"
+                  >
                     Upload new
                   </label>
                   <input
@@ -167,12 +250,14 @@ function AccountPage() {
                   />
                 </>
               )}
-              <div className="text-sm text-gray-600">Recommended size: 400x400px</div>
+              <div className="text-sm text-gray-600">
+                Recommended size: 400x400px
+              </div>
             </div>
           </div>
-          
+
           {user && (
-            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg font-semibold">
+            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg">
               {user.upvotes || 0} Upvotes
             </div>
           )}
@@ -202,7 +287,7 @@ function AccountPage() {
                   )}
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email
@@ -219,7 +304,9 @@ function AccountPage() {
             <div className="mb-8">
               <div className="flex items-center mb-6">
                 <hr className="flex-1 border-gray-300" />
-                <span className="px-4 text-gray-600 text-sm font-medium">change password</span>
+                <span className="px-4 text-gray-600 text-sm font-medium">
+                  change password
+                </span>
                 <hr className="flex-1 border-gray-300" />
               </div>
 
@@ -244,7 +331,7 @@ function AccountPage() {
                       className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -257,7 +344,7 @@ function AccountPage() {
                         className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Confirm password
@@ -284,14 +371,20 @@ function AccountPage() {
             <div>
               <div className="flex items-center mb-6">
                 <hr className="flex-1 border-red-300" />
-                <span className="px-4 text-red-500 text-sm font-medium">Danger Zone</span>
+                <span className="px-4 text-red-500 text-sm font-medium">
+                  Danger Zone
+                </span>
                 <hr className="flex-1 border-red-300" />
               </div>
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                <h3 className="text-red-800 font-semibold mb-2">Delete Account</h3>
+                <h3 className="text-red-800 font-semibold mb-2">
+                  Delete Account
+                </h3>
                 <p className="text-red-700 text-sm mb-4">
-                  This action will permanently delete your account, including all your data, upvotes, and chat history. This cannot be undone.
+                  This action will permanently delete your account, including
+                  all your data, upvotes, and chat history. This cannot be
+                  undone.
                 </p>
                 <button
                   onClick={handleDeleteAccount}
@@ -325,9 +418,11 @@ function AccountPage() {
                 className="mx-auto mb-4"
               />
               <h2 className="text-2xl font-semibold mb-2">Account Settings</h2>
-              <p className="text-gray-600">Please log in to manage your account settings</p>
+              <p className="text-gray-600">
+                Please log in to manage your account settings
+              </p>
             </div>
-            
+
             <Link
               href="/login"
               className="inline-block bg-[#FDC62E] text-black px-8 py-3 rounded-lg font-medium hover:bg-[#f5bb1f] transition-colors"
