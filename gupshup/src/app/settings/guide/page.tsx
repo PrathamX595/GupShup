@@ -4,7 +4,7 @@ function CommunityGuidelinesPage() {
       <div className="w-full max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-4 text-center">Community Guidelines</h1>
-          <p className="text-gray-600 text-center">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-gray-600 text-center">Last updated: 17-08-2025</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border p-8 space-y-6">
