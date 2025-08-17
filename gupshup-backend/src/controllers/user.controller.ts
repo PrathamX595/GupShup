@@ -3,8 +3,6 @@ import { IUser, User } from "../models/User";
 import ErrorResponse from "../utils/errorResponse";
 import { ApiResponse } from "../utils/apiResponse";
 import jwt from "jsonwebtoken";
-import path from "path";
-import fs from "fs";
 
 const frontendurl = process.env.FRONTEND_URL;
 

@@ -1,5 +1,4 @@
 import multer from "multer";
-import { IUser } from "../models/User";
 
 const storage = multer.memoryStorage();
 
