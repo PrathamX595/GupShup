@@ -286,7 +286,7 @@ function AccountPage() {
           </div>
 
           {user && (
-            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg font-semibold">
+            <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg">
               {user.upvotes || 0} Upvotes
             </div>
           )}

@@ -667,18 +667,18 @@ const updateAvatar = async (req: Request, res: Response) => {
       throw new ErrorResponse(400, "No file uploaded");
     }
 
-    const user = await User.findById(currentUser._id);
-    if (user?.avatar) {
-      const oldAvatarPath = path.join(__dirname, '../../uploads/avatars', path.basename(user.avatar));
-      if (fs.existsSync(oldAvatarPath)) {
-        fs.unlinkSync(oldAvatarPath);
-      }
-    }
+    const base64Image = req.file.buffer.toString("base64");
+    const mimeType = req.file.mimetype;
+    const avatarDataUrl = `data:${mimeType};base64,${base64Image}`;
 
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const sizeInKB = Math.round((base64Image.length * 0.75) / 1024);
+    console.log(
+      `Avatar upload - User: ${currentUser._id}, Size: ${sizeInKB}KB`
+    );
+
     const updatedUser = await User.findByIdAndUpdate(
       currentUser._id,
-      { avatar: avatarUrl },
+      { avatar: avatarDataUrl },
       { new: true }
     ).select("-password -refreshToken");
 
@@ -715,5 +715,5 @@ export {
   verifyUser,
   checkUpvoteStatus,
   deleteUser,
-  updateAvatar
+  updateAvatar,
 };

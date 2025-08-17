@@ -1183,7 +1183,7 @@ export default function Chat() {
                     ) : (
                       <div className="w-full h-full bg-[#FDC62E] flex items-center justify-center">
                         <Image
-                          src={"./gupshupLogo.svg"}
+                          src={"/gupshupLogo.svg"}
                           alt="Profile"
                           width={70}
                           height={70}
@@ -1241,7 +1241,7 @@ export default function Chat() {
                       <div className="absolute inset-0 flex items-center justify-center bg-[#FDC62E] text-black rounded-md">
                         <div className="text-center">
                           <Image
-                            src={"./gupshupLogo.svg"}
+                            src={"/gupshupLogo.svg"}
                             alt="Profile"
                             width={70}
                             height={70}
