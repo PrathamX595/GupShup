@@ -9,9 +9,9 @@ export function Footer() {
         <div className="flex pt-8 pb-6 gap-20 pl-20">
             <div className="flex flex-col text-2xl gap-2">
                 <Link href={"/settings"}>Settings</Link>
-                <Link href={"/community_guidelines"}>Community Guidelines</Link>
-                <Link href={"/privacy_policy"}>Privacy Policy</Link>
-                <Link href={"/terms_of_service"}>Terms of Service</Link>
+                <Link href={"/settings/guide"}>Community Guidelines</Link>
+                <Link href={"/settings/policy"}>Privacy Policy</Link>
+                <Link href={"/settings/terms"}>Terms of Service</Link>
             </div>
             <div className="flex gap-2">
                 <a href="https://github.com/PrathamX595/GupShup" target="_blank"><img src="icons8-github-64 1.svg" alt="github" /></a>
