@@ -544,6 +544,12 @@ const changePassword = async (req: Request, res: Response) => {
   }
 };
 
+
+//TODO: add new controller for resetting pass
+const resetPassword = async (req: Request, res: Response) => {
+  const {newPass} = req.body;
+}
+
 const googleLogin = async (req: Request, res: Response) => {
   try {
     const user = req.user as IUser;
