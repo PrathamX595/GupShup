@@ -18,6 +18,7 @@ import {
   getRoomInfo,
   leaveRoom,
 } from "./config/redis";
+import testMail from "./config/mail";
 
 dotenv.config();
 const app = express();
@@ -397,7 +398,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 
 redis.connect().catch(console.error);
-
+testMail();
 connectDB().then(() => {
   server
     .listen(PORT, () => {
