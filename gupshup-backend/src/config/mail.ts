@@ -1,24 +1,18 @@
 import nodemailer from "nodemailer";
 const testMail = async () => {
-  nodemailer.createTestAccount(async (err, account) => {
-    if (err) {
-      console.log("error in account creation: ", err.message);
-      return;
-    }
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
+    var transporter = nodemailer.createTransport({
+      host: "live.smtp.mailtrap.io",
       port: 587,
-      secure: false,
       auth: {
-        user: account.user,
-        pass: account.pass,
+        user: "api",
+        pass: process.env.MAIL_TOKEN,
       },
     });
 
     await transporter
       .sendMail({
-        from: "no-reply@example.com",
+        from: "hello@demomailtrap.co",
         to: "sethpratham67@gmail.com",
         subject: "Gupshup Tests",
         html: `<!DOCTYPE html>
@@ -90,10 +84,9 @@ const testMail = async () => {
       })
       .then((info) => {
         console.log("Message sent: %s", info.messageId);
-        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
       })
       .catch(console.error);
-  });
+
 };
 
 export default testMail;
