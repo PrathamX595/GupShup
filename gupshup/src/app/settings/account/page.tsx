@@ -34,7 +34,7 @@ function AccountPage() {
 
   useEffect(() => {
     if (user) {
-      setHasUsernameChanged(username !== user.userName);
+      setHasUsernameChanged(username.trim() !== user.userName);
     }
   }, [username, user]);
 
@@ -501,6 +501,7 @@ function AccountPage() {
       />
 
       <ForgotPasswordModal
+        userEmail={user?.email}
         isOpen={forgotPasswordModal}
         onClose={() => setForgotPasswordModal(false)}
         onSubmit={handleForgotPassword}

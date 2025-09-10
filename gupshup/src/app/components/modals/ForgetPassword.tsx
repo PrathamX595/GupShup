@@ -4,27 +4,35 @@ import React, { useState } from "react";
 import Modal from "./BaseModal";
 
 interface ForgotPasswordModalProps {
+  userEmail: string | undefined;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (email: string) => void;
 }
 
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
+  userEmail,
   isOpen,
   onClose,
-  onSubmit
+  onSubmit,
 }) => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [incorrect,setIncorrect] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim()) return;
-    
+
     setIsSubmitting(true);
     try {
-      await onSubmit(email);
-      setEmail("");
-      onClose();
+      if (userEmail != undefined && email === userEmail) {
+        await onSubmit(email);
+        setEmail("");
+        setIncorrect(false);
+        onClose();
+      }else{
+        setIncorrect(true);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -49,6 +57,9 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           className="w-full px-4 text-black py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
           autoFocus
         />
+        <p className={`text-red-600 text-sm ${incorrect? 'visible':'hidden'}`}  >
+          hey that's not your email
+        </p>
       </div>
       <div className="flex gap-3 justify-start">
         <button
