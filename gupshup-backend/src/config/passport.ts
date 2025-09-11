@@ -71,6 +71,7 @@ const passportConfig = () => {
             userName: profile.displayName,
             password: Math.random().toString(36).slice(-8),
             avatar: profile.photos?.[0].value,
+            isVerified: true,
           });
 
           const accessToken = user.generateAccessToken();

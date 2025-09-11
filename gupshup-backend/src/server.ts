@@ -18,7 +18,6 @@ import {
   getRoomInfo,
   leaveRoom,
 } from "./config/redis";
-import testMail from "./config/mail";
 
 dotenv.config();
 const app = express();
@@ -394,11 +393,9 @@ app.get("/", (request: Request, response: Response) => {
 app.use("/api/healthCheck", healthCheckRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/upvote", voteRouter);
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 redis.connect().catch(console.error);
-testMail();
 connectDB().then(() => {
   server
     .listen(PORT, () => {

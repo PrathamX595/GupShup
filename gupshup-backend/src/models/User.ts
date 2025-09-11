@@ -13,6 +13,7 @@ interface IUser extends Document {
   refreshToken: string;
   upvotesGiven: string[];
   upvotes: number;
+  isVerified: boolean;
 
   isPasswordCorrect(password: string): Promise<boolean>;
   generateAccessToken(): string;
@@ -41,6 +42,7 @@ const UserSchema: Schema<IUser> = new Schema({
     },
   ],
   upvotes: { type: Number, default: 0 },
+  isVerified: { type: Boolean, default: false },
 });
 
 UserSchema.pre("save", async function (next) {

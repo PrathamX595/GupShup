@@ -13,13 +13,24 @@ export const verifyJWT = async (req: Request, res: Response, next: NextFunction)
       throw new ErrorResponse(401, "Unauthorized request - no token provided");
     }
 
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as any;
-    
-    console.log("Auth middleware - decoded token:", decodedToken);
-    
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as any;    
     const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
     
     if (!user) {
+      console.error("Token details:", decodedToken);
+      res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        path: "/",
+      });
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        path: "/",
+      });
+      
       throw new ErrorResponse(401, "Invalid access token - user not found");
     }
     
@@ -30,6 +41,8 @@ export const verifyJWT = async (req: Request, res: Response, next: NextFunction)
     console.error("Auth middleware error:", error);
     
     if (error instanceof jwt.JsonWebTokenError) {
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
       throw new ErrorResponse(401, "Invalid access token");
     }
     
