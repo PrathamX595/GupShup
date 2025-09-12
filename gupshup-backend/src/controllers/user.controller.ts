@@ -396,15 +396,17 @@ const sendVerificationMail = async (
 ) => {
 
   const transporter = nodemailer.createTransport({
-    host: "live.smtp.mailtrap.io",
-    port: 587,
+    service: "Gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.MAIL_USER,
-      pass: process.env.MAIL_TOKEN,
+      pass: process.env.MAIL_APP_PASS,
     },
   });
   await transporter.sendMail({
-      from: "hello@demomailtrap.co",
+      from: "gupshup.website@gmail.com",
       to: `${sender}`,
       subject: "Gupshup Email Verification",
       html: `<!DOCTYPE html>
