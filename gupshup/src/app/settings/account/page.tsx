@@ -199,9 +199,13 @@ function AccountPage() {
   };
 
   const handleForgotPassword = async (email: string) => {
-    // TODO: Implement forgot password logic here
-    alert(`Password reset instructions have been sent to ${email}`);
-  };
+  try {
+    const response = await authService.resetPasswordLink(email);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
 
   return (
     <>

@@ -12,7 +12,9 @@ import {
   updateDetails,
   changePassword,
   updateAvatar,
-  verifyEmail
+  verifyEmail,
+  resetPassLink,
+  resetPassword
 } from "../controllers/user.controller";
 
 const router = Router();
@@ -69,6 +71,14 @@ router.route("/update").put(verifyJWT, (req, res, next) => {
 router.route("/update-pass").put(verifyJWT, (req, res, next) => {
   changePassword(req, res).catch(next);
 });
+
+router.route("/resetLink").put((req, res, next) => {
+  resetPassLink(req, res).catch(next);
+})
+
+router.route("/resetPass").put((req, res, next) => {
+  resetPassword(req, res).catch(next);
+})
 
 router
   .route("/update-avatar")

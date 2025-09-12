@@ -92,6 +92,22 @@ const authService = {
       throw error;
     }
   },
+  resetPasswordLink: async(email: string) => {
+    try {
+      const response = await api.put("/api/auth/resetLink", {email})
+      return response
+    } catch (error) {
+      throw error;
+    }
+  },
+  resetPassword: async(newPass: string, id:string, token:string) => {
+    try {
+      const response = await api.put("/api/auth/resetPass", {newPass, id, token})
+      return response
+    } catch (error) {
+      throw error;
+    }
+  }
 };
 
 const votingService = {

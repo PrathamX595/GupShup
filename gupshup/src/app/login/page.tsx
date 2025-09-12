@@ -27,7 +27,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const res = await authService.login(email, password);
-      router.back();
+      router.push('/');
       router.refresh();
     } catch (error: any) {
       let errorMessage = "Login failed. Please check your credentials.";
@@ -39,8 +39,12 @@ export default function LoginPage() {
   };
 
   const handleForgotPassword = async (email: string) => {
-    // TODO: Implement forgot password logic here
-    alert(`Password reset instructions have been sent to ${email}`);
+    try {
+      const response = await authService.resetPasswordLink(email);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   };
 
   return (
