@@ -22,7 +22,6 @@ function AccountPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  // Modal states
   const [deleteAccountModal, setDeleteAccountModal] = useState(false);
   const [forgotPasswordModal, setForgotPasswordModal] = useState(false);
 
@@ -209,12 +208,12 @@ function AccountPage() {
 
   return (
     <>
-      <div className="flex justify-center p-8 min-h-full">
+      <div className="flex justify-center p-4 sm:p-6 lg:p-8 min-h-full">
         <div className="w-full max-w-4xl">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
               {user ? (
-                <div className="w-20 h-20 rounded-full overflow-hidden relative group">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden relative group">
                   {user.avatar ? (
                     <Image
                       src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
@@ -224,13 +223,13 @@ function AccountPage() {
                       className="object-cover w-full h-full"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600 text-2xl font-semibold">
+                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600 text-xl sm:text-2xl font-semibold">
                       {user.userName?.charAt(0)?.toUpperCase() || "U"}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="w-20 h-20 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center">
                   <Image
                     src="/gupshupLogo.svg"
                     alt="Default Avatar"
@@ -240,7 +239,7 @@ function AccountPage() {
                 </div>
               )}
 
-              <div>
+              <div className="text-center sm:text-left">
                 {user && (
                   <>
                     <label
@@ -249,10 +248,10 @@ function AccountPage() {
                         isUploadingAvatar
                           ? "text-gray-400 cursor-not-allowed"
                           : "text-[#FDC62E] cursor-pointer hover:text-[#f5bb1f]"
-                      } transition-colors block`}
+                      } transition-colors block text-sm sm:text-base`}
                     >
                       {isUploadingAvatar ? (
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center justify-center sm:justify-start gap-2">
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
                           Uploading...
                         </span>
@@ -270,14 +269,14 @@ function AccountPage() {
                     />
                   </>
                 )}
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                   Recommended size: 400x400px (Max 5MB)
                 </div>
               </div>
             </div>
 
             {user && (
-              <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg font-semibold">
+              <div className="bg-[#FDC62E] text-black px-4 py-2 rounded-lg font-semibold text-center text-sm sm:text-base">
                 {user.upvotes || 0} Upvotes
               </div>
             )}
@@ -285,7 +284,7 @@ function AccountPage() {
 
           {user ? (
             <>
-              <div className="grid grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Username
@@ -296,7 +295,7 @@ function AccountPage() {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       disabled={isUpdatingUsername}
-                      className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                       placeholder="Enter username"
                       minLength={3}
                       maxLength={30}
@@ -309,7 +308,7 @@ function AccountPage() {
                           isUpdatingUsername
                             ? "bg-gray-400 cursor-not-allowed"
                             : "bg-[#FDC62E] hover:bg-[#f5bb1f]"
-                        } text-black px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2`}
+                        } text-black px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2 w-full sm:w-auto justify-center`}
                       >
                         {isUpdatingUsername ? (
                           <>
@@ -332,13 +331,13 @@ function AccountPage() {
                     type="email"
                     value={user.email}
                     readOnly
-                    className="w-full px-4 py-3 bg-gray-200 rounded-lg border-none cursor-not-allowed text-gray-600"
+                    className="w-full px-4 py-3 bg-gray-200 rounded-lg border-none cursor-not-allowed text-gray-600 text-sm sm:text-base"
                   />
                 </div>
               </div>
 
-              <div className="mb-8">
-                <div className="flex items-center mb-6">
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-center mb-4 sm:mb-6">
                   <hr className="flex-1 border-gray-300" />
                   <span className="px-4 text-gray-600 text-sm font-medium">
                     change password
@@ -346,17 +345,17 @@ function AccountPage() {
                   <hr className="flex-1 border-gray-300" />
                 </div>
 
-                <form onSubmit={handlePasswordChange} className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
+                <form onSubmit={handlePasswordChange} className="space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-1 gap-4 sm:gap-6">
                     <div>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
                         <label className="block text-sm font-medium text-gray-700">
                           Current password
                         </label>
                         <button
                           type="button"
                           onClick={() => setForgotPasswordModal(true)}
-                          className="text-[#FDC62E] text-sm hover:text-[#f5bb1f] hover:cursor-pointer transition-colors underline"
+                          className="text-[#FDC62E] text-sm hover:text-[#f5bb1f] hover:cursor-pointer transition-colors underline self-start sm:self-auto"
                         >
                           Forgot password?
                         </button>
@@ -366,13 +365,13 @@ function AccountPage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         disabled={isChangingPassword}
-                        className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50"
+                        className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50 text-sm sm:text-base"
                         placeholder="Enter current password"
                         required
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           New password
@@ -382,7 +381,7 @@ function AccountPage() {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           disabled={isChangingPassword}
-                          className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50"
+                          className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50 text-sm sm:text-base"
                           placeholder="Enter new password"
                           minLength={6}
                           required
@@ -398,7 +397,7 @@ function AccountPage() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           disabled={isChangingPassword}
-                          className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50"
+                          className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] disabled:opacity-50 text-sm sm:text-base"
                           placeholder="Confirm new password"
                           minLength={6}
                           required
@@ -414,7 +413,7 @@ function AccountPage() {
                       isChangingPassword
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-[#FDC62E] hover:bg-[#f5bb1f]"
-                    } text-black px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2`}
+                    } text-black px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 w-full sm:w-auto justify-center text-sm sm:text-base`}
                   >
                     {isChangingPassword ? (
                       <>
@@ -429,7 +428,7 @@ function AccountPage() {
               </div>
 
               <div>
-                <div className="flex items-center mb-6">
+                <div className="flex items-center mb-4 sm:mb-6">
                   <hr className="flex-1 border-red-300" />
                   <span className="px-4 text-red-500 text-sm font-medium">
                     Danger Zone
@@ -437,8 +436,8 @@ function AccountPage() {
                   <hr className="flex-1 border-red-300" />
                 </div>
 
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                  <h3 className="text-red-800 font-semibold mb-2">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6">
+                  <h3 className="text-red-800 font-semibold mb-2 text-base sm:text-lg">
                     Delete Account
                   </h3>
                   <p className="text-red-700 text-sm mb-4">
@@ -453,7 +452,7 @@ function AccountPage() {
                       isDeleting
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-red-600 hover:bg-red-700"
-                    } text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2`}
+                    } text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 w-full sm:w-auto justify-center text-sm sm:text-base`}
                   >
                     {isDeleting ? (
                       <>
@@ -468,8 +467,8 @@ function AccountPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-16">
-              <div className="mb-8">
+            <div className="text-center py-12 sm:py-16">
+              <div className="mb-6 sm:mb-8">
                 <Image
                   src="/gupshupLogo.svg"
                   alt="GupShup Logo"
@@ -477,17 +476,17 @@ function AccountPage() {
                   height={60}
                   className="mx-auto mb-4"
                 />
-                <h2 className="text-2xl font-semibold mb-2">
+                <h2 className="text-xl sm:text-2xl font-semibold mb-2">
                   Account Settings
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-sm sm:text-base">
                   Please log in to manage your account settings
                 </p>
               </div>
 
               <Link
                 href="/login"
-                className="inline-block bg-[#FDC62E] text-black px-8 py-3 rounded-lg font-medium hover:bg-[#f5bb1f] transition-colors"
+                className="inline-block bg-[#FDC62E] text-black px-6 sm:px-8 py-3 rounded-lg font-medium hover:bg-[#f5bb1f] transition-colors text-sm sm:text-base"
               >
                 Log In
               </Link>
