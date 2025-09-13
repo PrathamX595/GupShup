@@ -26,7 +26,7 @@ export function Header() {
   };
 
   const ProfileTrigger = () => (
-    <div className="w-10 h-10 rounded-full overflow-hidden hover:ring-2 hover:ring-gray-300 transition-all">
+    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden hover:ring-2 hover:ring-gray-300 transition-all">
       {user?.avatar ? (
         <Image
           src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
@@ -36,7 +36,7 @@ export function Header() {
           className="object-cover"
         />
       ) : (
-        <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+        <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs sm:text-sm">
           {user?.userName?.charAt(0)?.toUpperCase() || "U"}
         </div>
       )}
@@ -46,11 +46,11 @@ export function Header() {
   return (
     <div className="flex flex-col items-center w-screen item">
       <div className="bg-[#FDC62E] min-w-full h-6"></div>
-      <div className="flex items-center justify-between w-full h-full mt-5 px-10">
+      <div className="flex items-center justify-between w-full h-full mt-3 sm:mt-5 px-4 sm:px-6 lg:px-10">
         <Link href="/">
-          <img src="/fullLogo.svg" alt="logo" className="w-fit h-fit" />
+          <img src="/fullLogo.svg" alt="logo" className="h-8 sm:h-10 lg:h-24 w-auto" />
         </Link>
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-3 sm:gap-6 lg:gap-10">
           {user ? (
             <DropdownMenu trigger={<ProfileTrigger />} align="end">
               <div className="px-4 py-2 border-b border-gray-200">
@@ -107,16 +107,18 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <Link
-              className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-2xl hover:cursor-pointer"
+              className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-lg sm:text-xl lg:text-2xl hover:cursor-pointer hidden sm:block"
               href="login"
             >
               Log In
             </Link>
           )}
-          <Button
-            buttonText="Start Talking ➜"
-            onClick={() => router.push("/chat")}
-          />
+          <div className="scale-75 sm:scale-90 lg:scale-100 origin-right hidden sm:block">
+            <Button
+              buttonText="Start Talking ➜"
+              onClick={() => router.push("/chat")}
+            />
+          </div>
         </div>
       </div>
     </div>
