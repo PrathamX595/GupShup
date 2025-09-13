@@ -107,7 +107,7 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <Link
-              className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-lg sm:text-xl lg:text-2xl hover:cursor-pointer hidden sm:block"
+              className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-lg sm:text-xl lg:text-2xl hover:cursor-pointer"
               href="login"
             >
               Log In
