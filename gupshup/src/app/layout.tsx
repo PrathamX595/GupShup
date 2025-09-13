@@ -1,34 +1,17 @@
 import type { Metadata } from "next";
-import localFont from 'next/font/local';
-import { Geist, Geist_Mono } from "next/font/google";
+import { Kiwi_Maru, Love_Ya_Like_A_Sister } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const kiwiMaru = Kiwi_Maru({
   subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-kiwi-regular",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const loveYa = Love_Ya_Like_A_Sister({
   subsets: ["latin"],
-});
-
-const loveYaLikeASister = localFont({
-  src: '../../public/fonts/LoveYaLikeASister.ttf',
-  variable: '--font-love-ya',
-  weight: '400',
-});
-
-const kiwiMaruRegular = localFont({
-  src: '../../public/fonts/KiwiMaru-regular.ttf',
-  variable: '--font-kiwi-regular',
-  weight: '400',
-});
-
-const kiwiMaruMedium = localFont({
-  src: '../../public/fonts/KiwiMaru-Medium.ttf',
-  variable: '--font-kiwi-medium',
-  weight: '500',
+  weight: "400",
+  variable: "--font-love-ya",
 });
 
 export const metadata: Metadata = {
@@ -43,9 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${kiwiMaruMedium.variable} ${kiwiMaruRegular.variable} ${loveYaLikeASister.variable}`}
-      >
+      <body className={`${kiwiMaru.variable} ${loveYa.variable}`} style={{"--font-kiwi-medium": "var(--font-kiwi-regular)"} as React.CSSProperties}>
         {children}
       </body>
     </html>

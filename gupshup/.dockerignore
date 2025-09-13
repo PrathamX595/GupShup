@@ -1,7 +1,8 @@
 .dockerignore
 .gitignore
-.env
 .env.example
-.next
 node_modules
 Dockerfile
+.git
+.next
+README.md

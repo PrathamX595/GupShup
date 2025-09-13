@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { authService } from "../services/api";
 import useAuth from "../hooks/useAuth";
 import { useRouter, useSearchParams } from "next/navigation";
 import ForgotPasswordModal from "../components/modals/ForgetPassword";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -245,5 +245,24 @@ export default function ResetPasswordPage() {
         onSubmit={handleForgotPassword}
       />
     </>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="text-black flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_2px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_2px)] bg-[size:6rem_6rem] font-[family-name:var(--font-kiwi-regular)] px-4">
+        <div className="flex flex-col items-center w-full fixed top-0 left-0 z-50">
+          <div className="bg-[#FDC62E] w-full h-6"></div>
+        </div>
+        <div className="bg-white px-6 sm:px-8 md:px-12 py-6 rounded-2xl shadow-md w-full max-w-sm sm:max-w-md md:max-w-lg border-4 border-black relative my-8 sm:my-12 mt-14 sm:mt-16">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FDC62E]"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
