@@ -925,7 +925,6 @@ export default function Chat() {
       }, 3000);
     };
 
-    // Set up all the event listeners
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("roomAssigned", handleRoomAssigned);
@@ -943,7 +942,6 @@ export default function Chat() {
     socket.on("peerVidToggled", handlePeerVidToggleEvent);
     socket.on("sendReaction", handlePeerReaction);
 
-    // Clean up function
     return () => {
       console.log("Cleaning up socket listeners...");
       socket.off("connect", handleConnect);
@@ -1000,246 +998,196 @@ export default function Chat() {
   }, []);
 
   return (
-    <div className="text-black font-[family-name:var(--font-kiwi-regular)] flex flex-col">
-      <div className="flex flex-col h-screen">
-        <div className="bg-[#FDC62E] min-w-full h-6"></div>
-        <div className="flex flex-grow w-full overflow-hidden">
-          <div className="w-2/3 h-full flex items-end">
-            <div className="flex flex-col h-full px-5 border-r justify-between items-center gap-2">
-              <div className="flex flex-col">
-                <Link href="/">
-                  <img src="/fullLogo.svg" alt="logo" className="w-fit h-15" />
-                </Link>
-                <div className="flex gap-1 items-center">
-                  <div className="text-xl">Chatroom</div>
-                  <div className="text-[#5A5A5A] text-sm">
-                    {isSocketConnected ? "Connected" : "Disconnected"}
+    <>
+      <div className="lg:hidden flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_2px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_2px)] bg-[size:6rem_6rem] font-[family-name:var(--font-kiwi-regular)] p-8 text-center">
+        <div className="bg-[#FDC62E] w-full h-6 absolute top-0 left-0"></div>
+        <div className="bg-white p-8 rounded-2xl border-4 border-black shadow-lg max-w-md">
+          <img src="/gupshupBoxed.svg" alt="GupShup Logo" className="w-20 h-20 mx-auto mb-6" />
+          <h1 className="text-2xl text-black font-[family-name:var(--font-kiwi-medium)] mb-4">
+            Oops!
+          </h1>
+          <p className="text-lg text-black mb-4">
+            Yeah, I have a life. I didn't make this responsive :P!
+          </p>
+          <p className="text-base text-black mb-6">
+            Please switch to a laptop or desktop to experience the full GupShup magic. 
+            Your tiny screen deserves better than my lazy CSS skills!
+          </p>
+          <Link href="/">
+            <button className="bg-[#FDC62E] hover:bg-[#f5bb1f] text-black px-6 py-3 rounded-lg border-2 border-black font-medium transition-colors">
+              Go Back Home
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="text-black font-[family-name:var(--font-kiwi-regular)] flex-col hidden lg:flex">
+        <div className="flex flex-col h-screen">
+          <div className="bg-[#FDC62E] min-w-full h-6"></div>
+          <div className="flex flex-grow w-full overflow-hidden">
+            <div className="w-2/3 h-full flex items-end">
+              <div className="flex flex-col h-full px-5 border-r justify-between items-center gap-2">
+                <div className="flex flex-col">
+                  <Link href="/">
+                    <img src="/fullLogo.svg" alt="logo" className="w-fit h-15" />
+                  </Link>
+                  <div className="flex gap-1 items-center">
+                    <div className="text-xl">Chatroom</div>
+                    <div className="text-[#5A5A5A] text-sm">
+                      {isSocketConnected ? "Connected" : "Disconnected"}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-5 mt-4">
+                    <div className="text-sm text-gray-700 p-3 bg-gray-50 rounded-lg border w-48">
+                      <div className="font-bold text-center mb-2">Upvotes</div>
+                      <div className="flex justify-between items-center">
+                        <div className="text-center">
+                          <div className="font-medium">You</div>
+                          <div className="text-lg font-bold text-[#FDC62E]">
+                            {user?.upvotes || 0}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium">Peer</div>
+                          <div className="text-lg font-bold text-[#FDC62E]">
+                            {peerInfo?.upvotes || 0}
+                          </div>
+                        </div>
+                      </div>
+                      {peerInfo && (
+                        <div className="text-xs text-center mt-2 text-black">
+                          {peerInfo.userName}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="w-48">
+                      <Reactions
+                        onReactionClick={(emoji) => {
+                          console.log("Reaction clicked:", emoji);
+                          handleSelfReaction(emoji);
+                          socket.emit("getReaction", { emoji });
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-5 mt-4">
-                  <div className="text-sm text-gray-700 p-3 bg-gray-50 rounded-lg border w-48">
-                    <div className="font-bold text-center mb-2">Upvotes</div>
-                    <div className="flex justify-between items-center">
-                      <div className="text-center">
-                        <div className="font-medium">You</div>
-                        <div className="text-lg font-bold text-[#FDC62E]">
-                          {user?.upvotes || 0}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">Peer</div>
-                        <div className="text-lg font-bold text-[#FDC62E]">
-                          {peerInfo?.upvotes || 0}
-                        </div>
-                      </div>
-                    </div>
-                    {peerInfo && (
-                      <div className="text-xs text-center mt-2 text-black">
-                        {peerInfo.userName}
+                <div className="flex flex-col gap-5">
+                  <div>
+                    {areBothUsersLoggedIn() && peerInfo ? (
+                      <button
+                        onClick={hasUpvoted ? handleRemoveUpvote : handleUpvote}
+                        disabled={isUpvoting}
+                        className={`flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full text-md transition-colors ${
+                          isUpvoting
+                            ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
+                            : hasUpvoted
+                            ? "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
+                            : "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
+                        }`}
+                      >
+                        {isUpvoting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            {hasUpvoted ? "Removing..." : "Upvoting..."}
+                          </>
+                        ) : hasUpvoted ? (
+                          <>
+                            <BiSolidUpvote size={20} className="text-white" />
+                            Remove
+                          </>
+                        ) : (
+                          <>
+                            <BiUpvote size={20} />
+                            Upvote
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full bg-gray-300 text-gray-600 text-md">
+                        {user
+                          ? isOtherUserLoggedIn
+                            ? "Both users must be logged in"
+                            : "Peer not login"
+                          : "Login to upvote"}
                       </div>
                     )}
                   </div>
-
-                  <div className="w-48">
-                    <Reactions
-                      onReactionClick={(emoji) => {
-                        console.log("Reaction clicked:", emoji);
-                        handleSelfReaction(emoji);
-                        socket.emit("getReaction", { emoji });
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* <div className="text-xs text-gray-500 mt-2 max-w-48 bg-gray-100 p-2 rounded">
-                  <div className="font-bold">Debug:</div>
-                  <div>
-                    My: Video{isVideoOn ? "ON" : "OFF"} Mic
-                    {isMicOn ? "ON" : "OFF"}
-                  </div>
-                  <div>
-                    Peer: Video{isPeerVideoOn ? "ON" : "OFF"} Mic
-                    {isPeerMicOn ? "ON" : "OFF"}
-                  </div>
-                  <div>Room: {roomStatus}</div>
-                  <div>Conn: {connectionState}</div>
-                  <div>Stream: {incomingStream ? "YES" : "NO"}</div>
-                </div> */}
-              </div>
-
-              <div className="flex flex-col gap-5">
-                <div>
-                  {areBothUsersLoggedIn() && peerInfo ? (
-                    <button
-                      onClick={hasUpvoted ? handleRemoveUpvote : handleUpvote}
-                      disabled={isUpvoting}
-                      className={`flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full text-md transition-colors ${
-                        isUpvoting
-                          ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
-                          : hasUpvoted
-                          ? "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
-                          : "bg-[#FDC62E] hover:bg-[#f5bb1f] border-black cursor-pointer"
-                      }`}
-                    >
-                      {isUpvoting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          {hasUpvoted ? "Removing..." : "Upvoting..."}
-                        </>
-                      ) : hasUpvoted ? (
-                        <>
-                          <BiSolidUpvote size={20} className="text-white" />
-                          Remove
-                        </>
-                      ) : (
-                        <>
-                          <BiUpvote size={20} />
-                          Upvote
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-2 justify-center py-3 px-4 border-4 rounded-full bg-gray-300 text-gray-600 text-md">
-                      {user
-                        ? isOtherUserLoggedIn
-                          ? "Both users must be logged in"
-                          : "Peer not login"
-                        : "Login to upvote"}
-                    </div>
-                  )}
-                </div>
-                <div className="w-full flex justify-center gap-10 mb-10">
-                  {isVideoOn ? (
-                    <div
-                      className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors"
-                      onClick={() => {
-                        handleVideoToggle();
-                      }}
-                    >
-                      <FaVideo color="black" size={20} />
-                    </div>
-                  ) : (
-                    <div
-                      className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600 cursor-pointer hover:bg-red-700 transition-colors"
-                      onClick={() => {
-                        handleVideoToggle();
-                      }}
-                    >
-                      <FaVideoSlash color="white" size={20} />
-                    </div>
-                  )}
-                  {isMicOn ? (
-                    <div
-                      className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors"
-                      onClick={() => {
-                        handleMicToggle();
-                      }}
-                    >
-                      <FaMicrophone color="black" size={20} />
-                    </div>
-                  ) : (
-                    <div
-                      className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600 cursor-pointer hover:bg-red-700 transition-colors"
-                      onClick={() => {
-                        handleMicToggle();
-                      }}
-                    >
-                      <FaMicrophoneSlash color="white" size={20} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="w-full h-full mx-5 pb-5">
-              <div
-                className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative"
-                ref={localVideoContainerRef}
-                tabIndex={0}
-              >
-                {isVideoOn ? (
-                  <>
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                    <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                      You
-                    </div>
-                  </>
-                ) : (
-                  <div className="w-full h-full flex flex-col justify-center items-center">
-                    {user?.avatar ? (
-                      <Image
-                        src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
-                        alt="Profile"
-                        width={70}
-                        height={70}
-                        className="object-cover rounded-full"
-                      />
+                  <div className="w-full flex justify-center gap-10 mb-10">
+                    {isVideoOn ? (
+                      <div
+                        className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors"
+                        onClick={() => {
+                          handleVideoToggle();
+                        }}
+                      >
+                        <FaVideo color="black" size={20} />
+                      </div>
                     ) : (
-                      <div className="w-full h-full bg-[#FDC62E] flex items-center justify-center">
+                      <div
+                        className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600 cursor-pointer hover:bg-red-700 transition-colors"
+                        onClick={() => {
+                          handleVideoToggle();
+                        }}
+                      >
+                        <FaVideoSlash color="white" size={20} />
+                      </div>
+                    )}
+                    {isMicOn ? (
+                      <div
+                        className="w-13 h-13 flex justify-center items-center rounded-full bg-[#FDC62E] cursor-pointer hover:bg-[#f5bb1f] transition-colors"
+                        onClick={() => {
+                          handleMicToggle();
+                        }}
+                      >
+                        <FaMicrophone color="black" size={20} />
+                      </div>
+                    ) : (
+                      <div
+                        className="w-13 h-13 flex justify-center items-center rounded-full bg-red-600 cursor-pointer hover:bg-red-700 transition-colors"
+                        onClick={() => {
+                          handleMicToggle();
+                        }}
+                      >
+                        <FaMicrophoneSlash color="white" size={20} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="w-full h-full mx-5 pb-5">
+                <div
+                  className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative"
+                  ref={localVideoContainerRef}
+                  tabIndex={0}
+                >
+                  {isVideoOn ? (
+                    <>
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                      <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                        You
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col justify-center items-center">
+                      {user?.avatar ? (
                         <Image
-                          src={"/gupshupLogo.svg"}
+                          src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
                           alt="Profile"
                           width={70}
                           height={70}
-                          className="object-cover bg-white rounded-full"
+                          className="object-cover rounded-full"
                         />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {selfReaction && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <div className="text-xl bg-white rounded-full animate-bounce p-2 shadow-lg">
-                      {selfReaction}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div
-                className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative"
-                ref={peerVideoContainerRef}
-                tabIndex={0}
-              >
-                {incomingStream ? (
-                  <>
-                    <video
-                      ref={remoteVideoRef}
-                      autoPlay
-                      playsInline
-                      className={`w-full h-full object-cover rounded-md bg-black ${
-                        isPeerVideoOn ? "opacity-100" : "opacity-0"
-                      }`}
-                      onLoadedMetadata={() => {
-                        if (remoteVideoRef.current) {
-                          remoteVideoRef.current.play().catch((e) => {
-                            console.log(
-                              "Auto play failed, will need manual play:",
-                              e
-                            );
-                          });
-                        }
-                      }}
-                      onError={(e) => {
-                        console.error("Video error:", e);
-                      }}
-                      onPlay={() => {
-                        console.log("Remote video is playing!");
-                      }}
-                    />
-                    <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                      Peer {isPeerVideoOn ? "Video" : "Video OFF"}
-                    </div>
-                    {!isPeerVideoOn && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#FDC62E] text-black rounded-md">
-                        <div className="text-center">
+                      ) : (
+                        <div className="w-full h-full bg-[#FDC62E] flex items-center justify-center">
                           <Image
                             src={"/gupshupLogo.svg"}
                             alt="Profile"
@@ -1248,135 +1196,194 @@ export default function Chat() {
                             className="object-cover bg-white rounded-full"
                           />
                         </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-600">
-                    <div className="text-black flex flex-col justify-center items-center">
-                      {roomStatus === "searching"
-                        ? "Searching for partner..."
-                        : connectionState === "connecting"
-                        ? "Connecting to peer..."
-                        : connectionState === "failed"
-                        ? "Connection failed, try next room"
-                        : "Waiting for video..."}
-                    </div>
-                  </div>
-                )}
-                {peerReaction && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <div className="text-xl bg-white rounded-full animate-bounce p-2 shadow-lg">
-                      {peerReaction}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col w-1/3 h-full border-l border-black">
-            <div className=" flex border-b border-black justify-end py-4  pr-5">
-              <div className="flex items-center gap-10">
-                {user ? (
-                  <div className="w-10 h-10 rounded-full overflow-hidden">
-                    {user.avatar ? (
-                      <Image
-                        src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
-                        alt="Profile"
-                        width={40}
-                        height={40}
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
-                        {user.userName?.charAt(0)?.toUpperCase() || "U"}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Link
-                    className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-2xl hover:cursor-pointer"
-                    href="login"
-                  >
-                    Log In
-                  </Link>
-                )}
-                <Button
-                  buttonText="Next room [spacebar] ➜"
-                  className="h-10"
-                  onClick={handleNextRoom}
-                />
-              </div>
-            </div>
-            <div className="flex flex-col mx-5 min-h-0 h-full">
-              <div className="text-2xl py-3 flex-shrink-0">chat</div>
-              <div
-                ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
-                id="messages-container"
-              >
-                <MessageBox data={messages} />
-                <div ref={messagesEndRef} />
-              </div>
-              <div className="mb-4 flex-shrink-0">
-                <form
-                  ref={chatRef}
-                  className="relative flex items-center"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleChatBtn();
-                  }}
-                  suppressHydrationWarning={true}
-                >
-                  <button
-                    type="button"
-                    className="right-12 px-4 py-3 rounded-tl-2xl rounded-bl-2xl bg-[#F2F2F2] hover:bg-[#e5e5e5]"
-                    onClick={() => setIsEmojiOpen(!isEmojiOpen)}
-                    suppressHydrationWarning={true}
-                  >
-                    😊
-                  </button>
-                  {isEmojiOpen && (
-                    <div className="absolute bottom-16 right-0 z-50">
-                      <EmojiPicker
-                        onEmojiClick={(emojiData) => {
-                          setSelfMessage((prev) => prev + emojiData.emoji);
-                        }}
-                      />
+                      )}
                     </div>
                   )}
 
-                  <input
-                    type="text"
-                    placeholder="Type a message"
-                    className="w-full px-1 py-3 bg-[#F2F2F2] placeholder:text-[#898989] placeholder:text-sm rounded-br-2xl rounded-tr-2xl border-none focus:outline-none focus:ring-0 pr-20"
-                    value={selfMessage}
-                    onChange={(e) => {
-                      setSelfMessage(e.target.value);
+                  {selfReaction && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <div className="text-xl bg-white rounded-full animate-bounce p-2 shadow-lg">
+                        {selfReaction}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="border-3 border-black rounded-md bg-[#FDC62E] h-1/2 w-full my-2 relative"
+                  ref={peerVideoContainerRef}
+                  tabIndex={0}
+                >
+                  {incomingStream ? (
+                    <>
+                      <video
+                        ref={remoteVideoRef}
+                        autoPlay
+                        playsInline
+                        className={`w-full h-full object-cover rounded-md bg-black ${
+                          isPeerVideoOn ? "opacity-100" : "opacity-0"
+                        }`}
+                        onLoadedMetadata={() => {
+                          if (remoteVideoRef.current) {
+                            remoteVideoRef.current.play().catch((e) => {
+                              console.log(
+                                "Auto play failed, will need manual play:",
+                                e
+                              );
+                            });
+                          }
+                        }}
+                        onError={(e) => {
+                          console.error("Video error:", e);
+                        }}
+                        onPlay={() => {
+                          console.log("Remote video is playing!");
+                        }}
+                      />
+                      <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                        Peer {isPeerVideoOn ? "Video" : "Video OFF"}
+                      </div>
+                      {!isPeerVideoOn && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#FDC62E] text-black rounded-md">
+                          <div className="text-center">
+                            <Image
+                              src={"/gupshupLogo.svg"}
+                              alt="Profile"
+                              width={70}
+                              height={70}
+                              className="object-cover bg-white rounded-full"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-600">
+                      <div className="text-black flex flex-col justify-center items-center">
+                        {roomStatus === "searching"
+                          ? "Searching for partner..."
+                          : connectionState === "connecting"
+                          ? "Connecting to peer..."
+                          : connectionState === "failed"
+                          ? "Connection failed, try next room"
+                          : "Waiting for video..."}
+                      </div>
+                    </div>
+                  )}
+                  {peerReaction && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <div className="text-xl bg-white rounded-full animate-bounce p-2 shadow-lg">
+                        {peerReaction}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col w-1/3 h-full border-l border-black">
+              <div className=" flex border-b border-black justify-end py-4  pr-5">
+                <div className="flex items-center gap-10">
+                  {user ? (
+                    <div className="w-10 h-10 rounded-full overflow-hidden">
+                      {user.avatar ? (
+                        <Image
+                          src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
+                          alt="Profile"
+                          width={40}
+                          height={40}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+                          {user.userName?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Link
+                      className="text-[#5A5A5A] underline-[#5A5A5A] underline underline-offset-3 text-2xl hover:cursor-pointer"
+                      href="login"
+                    >
+                      Log In
+                    </Link>
+                  )}
+                  <Button
+                    buttonText="Next room [spacebar] ➜"
+                    className="h-10"
+                    onClick={handleNextRoom}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col mx-5 min-h-0 h-full">
+                <div className="text-2xl py-3 flex-shrink-0">chat</div>
+                <div
+                  ref={messagesContainerRef}
+                  className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+                  id="messages-container"
+                >
+                  <MessageBox data={messages} />
+                  <div ref={messagesEndRef} />
+                </div>
+                <div className="mb-4 flex-shrink-0">
+                  <form
+                    ref={chatRef}
+                    className="relative flex items-center"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleChatBtn();
                     }}
                     suppressHydrationWarning={true}
-                  />
-
-                  <button
-                    type="submit"
-                    className="absolute right-2 p-2 rounded-xl hover:bg-[#e5e5e5]"
-                    aria-label="Send message"
-                    onClick={handleChatBtn}
-                    suppressHydrationWarning={true}
                   >
-                    <img
-                      src="/submitArrow.svg"
-                      alt="Send"
-                      className="w-5 h-5"
+                    <button
+                      type="button"
+                      className="right-12 px-4 py-3 rounded-tl-2xl rounded-bl-2xl bg-[#F2F2F2] hover:bg-[#e5e5e5]"
+                      onClick={() => setIsEmojiOpen(!isEmojiOpen)}
+                      suppressHydrationWarning={true}
+                    >
+                      😊
+                    </button>
+                    {isEmojiOpen && (
+                      <div className="absolute bottom-16 right-0 z-50">
+                        <EmojiPicker
+                          onEmojiClick={(emojiData) => {
+                            setSelfMessage((prev) => prev + emojiData.emoji);
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Type a message"
+                      className="w-full px-1 py-3 bg-[#F2F2F2] placeholder:text-[#898989] placeholder:text-sm rounded-br-2xl rounded-tr-2xl border-none focus:outline-none focus:ring-0 pr-20"
+                      value={selfMessage}
+                      onChange={(e) => {
+                        setSelfMessage(e.target.value);
+                      }}
+                      suppressHydrationWarning={true}
                     />
-                  </button>
-                </form>
+
+                    <button
+                      type="submit"
+                      className="absolute right-2 p-2 rounded-xl hover:bg-[#e5e5e5]"
+                      aria-label="Send message"
+                      onClick={handleChatBtn}
+                      suppressHydrationWarning={true}
+                    >
+                      <img
+                        src="/submitArrow.svg"
+                        alt="Send"
+                        className="w-5 h-5"
+                      />
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </>
   );
 }
