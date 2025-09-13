@@ -90,26 +90,26 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="text-black flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_2px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_2px)] bg-[size:6rem_6rem] font-[family-name:var(--font-kiwi-regular)]">
-        <div className="flex flex-col items-center w-screen item">
-          <div className="bg-[#FDC62E] min-w-full h-6"></div>
+      <div className="text-black flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_2px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_2px)] bg-[size:6rem_6rem] font-[family-name:var(--font-kiwi-regular)] px-4">
+        <div className="flex flex-col items-center w-full fixed top-0 left-0 z-50">
+          <div className="bg-[#FDC62E] w-full h-6"></div>
         </div>
-        <div className="bg-white px-12 py-8 rounded-2xl shadow-md max-w-lg w-full border-4 border-black relative my-12">
+        <div className="bg-white px-6 sm:px-8 md:px-12 py-6 sm:py-8 rounded-2xl shadow-md w-full max-w-sm sm:max-w-md md:max-w-lg border-4 border-black relative my-8 sm:my-12 mt-14 sm:mt-16">
           <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
-              <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 sm:mb-6">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
-            <h1 className="text-2xl font-[family-name:var(--font-kiwi-medium)] mb-4 text-green-800">
+            <h1 className="text-xl sm:text-2xl font-[family-name:var(--font-kiwi-medium)] mb-3 sm:mb-4 text-green-800">
               Password Reset Successful!
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
               Your password has been successfully updated. You will be redirected to the login page shortly.
             </p>
             <Link 
               href="/login"
-              className="bg-[#FDC62E] hover:bg-[#f5bb1f] text-black px-6 py-3 rounded-lg font-medium transition-colors"
+              className="bg-[#FDC62E] hover:bg-[#f5bb1f] text-black px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base"
             >
               Go to Login
             </Link>
@@ -121,31 +121,31 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <div className="text-black flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_2px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_2px)] bg-[size:6rem_6rem] font-[family-name:var(--font-kiwi-regular)]">
-        <div className="flex flex-col items-center w-screen item">
-          <div className="bg-[#FDC62E] min-w-full h-6"></div>
+      <div className="text-black flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_2px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_2px)] bg-[size:6rem_6rem] font-[family-name:var(--font-kiwi-regular)] px-4">
+        <div className="flex flex-col items-center w-full fixed top-0 left-0 z-50">
+          <div className="bg-[#FDC62E] w-full h-6"></div>
         </div>
-        <div className="bg-white px-12 py-6 rounded-2xl shadow-md max-w-lg w-full border-4 border-black relative my-12">
-          <div className="flex flex-col items-center mb-6">
-            <div className="flex items-center justify-center mb-4">
+        <div className="bg-white px-6 sm:px-8 md:px-12 py-6 rounded-2xl shadow-md w-full max-w-sm sm:max-w-md md:max-w-lg border-4 border-black relative my-8 sm:my-12 mt-14 sm:mt-16">
+          <div className="flex flex-col items-center mb-4 sm:mb-6">
+            <div className="flex items-center justify-center mb-3 sm:mb-4">
               <img
                 src="/gupshupBoxed.svg"
                 alt="GupShup Logo"
-                className="w-24 h-24"
+                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24"
               />
             </div>
-            <h1 className="text-black text-2xl font-[family-name:var(--font-kiwi-medium)]">
+            <h1 className="text-black text-xl sm:text-2xl font-[family-name:var(--font-kiwi-medium)] text-center">
               Reset Your Password
             </h1>
-            <p className="text-black mt-1 text-center">
+            <p className="text-black mt-1 text-center text-sm sm:text-base">
               Enter your new password below
             </p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-700 text-sm font-medium flex items-center gap-2">
-                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+              <p className="text-red-700 text-xs sm:text-sm font-medium flex items-center gap-2">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
                 {error}
@@ -153,7 +153,7 @@ export default function ResetPasswordPage() {
               {error.includes("Invalid or expired") && (
                 <button
                   onClick={() => setForgotPasswordModal(true)}
-                  className="mt-2 text-[#FDC62E] hover:text-[#f5bb1f] text-sm underline"
+                  className="mt-2 text-[#FDC62E] hover:text-[#f5bb1f] text-xs sm:text-sm underline"
                 >
                   Request new reset link
                 </button>
@@ -163,7 +163,7 @@ export default function ResetPasswordPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-[family-name:var(--font-kiwi-medium)] mb-2">
+              <label className="block text-xs sm:text-sm font-[family-name:var(--font-kiwi-medium)] mb-1 sm:mb-2">
                 New Password <span className="text-red-500">*</span>
               </label>
               <input
@@ -171,7 +171,7 @@ export default function ResetPasswordPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter your new password"
-                className="w-full px-5 py-3 bg-[#D9D9D9] placeholder:text-[#A7A7A7] placeholder:text-sm rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
+                className="w-full px-4 sm:px-5 py-2 sm:py-3 bg-[#D9D9D9] placeholder:text-[#A7A7A7] placeholder:text-xs sm:placeholder:text-sm rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] text-sm sm:text-base"
                 required
                 minLength={6}
                 disabled={isLoading}
@@ -182,7 +182,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-[family-name:var(--font-kiwi-medium)] mb-2">
+              <label className="block text-xs sm:text-sm font-[family-name:var(--font-kiwi-medium)] mb-1 sm:mb-2">
                 Confirm New Password <span className="text-red-500">*</span>
               </label>
               <input
@@ -190,17 +190,17 @@ export default function ResetPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your new password"
-                className="w-full px-5 py-3 bg-[#D9D9D9] placeholder:text-[#A7A7A7] placeholder:text-sm rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E]"
+                className="w-full px-4 sm:px-5 py-2 sm:py-3 bg-[#D9D9D9] placeholder:text-[#A7A7A7] placeholder:text-xs sm:placeholder:text-sm rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-[#FDC62E] text-sm sm:text-base"
                 required
                 disabled={isLoading}
               />
             </div>
 
-            <div className="flex flex-col items-center w-full mt-8">
+            <div className="flex flex-col items-center w-full mt-6 sm:mt-8">
               <button
                 type="submit"
                 disabled={isLoading || !newPassword || !confirmPassword}
-                className={`w-full px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                className={`w-full px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
                   isLoading || !newPassword || !confirmPassword
                     ? "bg-gray-400 cursor-not-allowed text-gray-600"
                     : "bg-[#FDC62E] hover:bg-[#f5bb1f] text-black"
@@ -208,7 +208,7 @@ export default function ResetPasswordPage() {
               >
                 {isLoading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-black"></div>
                     Resetting Password...
                   </>
                 ) : (
@@ -217,15 +217,15 @@ export default function ResetPasswordPage() {
               </button>
             </div>
 
-            <div className="text-center mt-6">
-              <div className="flex items-center justify-center gap-4 text-sm">
+            <div className="text-center mt-4 sm:mt-6">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm">
                 <Link
                   href="/login"
                   className="text-[#FDC62E] hover:text-[#FCBC0D] underline font-[family-name:var(--font-kiwi-medium)]"
                 >
                   Back to Login
                 </Link>
-                <span className="text-gray-400">|</span>
+                <span className="text-gray-400 hidden sm:inline">|</span>
                 <button
                   type="button"
                   onClick={() => setForgotPasswordModal(true)}
