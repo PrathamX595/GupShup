@@ -686,14 +686,20 @@ const googleLogin = async (req: Request, res: Response) => {
       maxAge: 24 * 60 * 60 * 1000,
     };
 
-    return res
+    if (!frontendurl) {
+      res.status(500).json({
+        success: false,
+        message: "Frontend URL not configured. Please contact administrator.",
+      });
+      return;
+    }
+
+    res
       .cookie("accessToken", accessToken, cookieOptions)
       .cookie("refreshToken", refreshToken, cookieOptions)
-      .redirect(process.env.FRONTEND_URL || "http://localhost:3000");
+      .redirect(frontendurl);
   } catch (error) {
-    return res.redirect(
-      `${frontendurl || "http://localhost:3000"}/login?error=authentication_failed`
-    );
+    res.redirect(`${frontendurl}/login?error=authentication_failed`);
   }
 };
 
@@ -869,38 +875,38 @@ const resetPassLink = async (req: Request, res: Response) => {
   try {
     const email = req.body.email;
 
-  const user = await User.findOne({ email: email });
-  if (!user) {
-    return res.status(404).json({ 
-        success: false, 
-        message: "Email not found in system" 
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Email not found in system",
       });
-  }
+    }
 
-  const secret = process.env.ACCESS_TOKEN_SECRET + user.password;
+    const secret = process.env.ACCESS_TOKEN_SECRET + user.password;
 
-  const token = jwt.sign({ id: user._id, email: user.email }, secret, {
-    expiresIn: "1h",
-  });
+    const token = jwt.sign({ id: user._id, email: user.email }, secret, {
+      expiresIn: "1h",
+    });
 
-  const url = `http://localhost:3000/resetPass?id=${user._id}&token=${token}`;
-  const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_APP_PASS,
-    },
-  });
+    const url = `http://localhost:3000/resetPass?id=${user._id}&token=${token}`;
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_APP_PASS,
+      },
+    });
 
-  await transporter
-    .sendMail({
-      from: "gupshup.website@gmail.com",
-      to: `${email}`,
-      subject: "Password Reset",
-      html: `<!DOCTYPE html>
+    await transporter
+      .sendMail({
+        from: "gupshup.website@gmail.com",
+        to: `${email}`,
+        subject: "Password Reset",
+        html: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -965,24 +971,23 @@ const resetPassLink = async (req: Request, res: Response) => {
     </table>
 </body>
 </html>`,
-    })
-    .then((info: any) => {
-      console.log("Message sent: %s", info.messageId);
-    })
-    .catch(console.error);
+      })
+      .then((info: any) => {
+        console.log("Message sent: %s", info.messageId);
+      })
+      .catch(console.error);
 
     return res.status(200).json({
       success: true,
-      message: "Password reset link sent successfully"
+      message: "Password reset link sent successfully",
     });
   } catch (error) {
     console.error("Reset password link error:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to send reset link"
+      message: "Failed to send reset link",
     });
   }
-  
 };
 
 export {

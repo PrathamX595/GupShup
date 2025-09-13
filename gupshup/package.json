@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "axios": "^1.10.0",
+    "dotenv": "^17.2.2",
     "emoji-picker-react": "^4.13.2",
     "next": "15.3.2",
     "react": "^19.0.0",

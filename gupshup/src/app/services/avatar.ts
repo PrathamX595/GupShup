@@ -11,6 +11,6 @@ export const getAvatarUrl = (
     return avatarPath;
   }
 
-  const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
   return `${backendUrl}${avatarPath}`;
 };

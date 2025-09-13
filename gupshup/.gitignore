@@ -17,6 +17,8 @@
 /.next/
 /out/
 
+.gitignore
+
 # production
 /build
 

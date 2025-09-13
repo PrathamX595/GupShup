@@ -52,11 +52,11 @@ router.route("/verifyEmail/:something").get(async (req, res, next) => {
     const result = await verifyEmail(token);
     
     if (result.success) {
-      return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}?emailVerified=true`);
+      return res.redirect(`${process.env.FRONTEND_URL}?emailVerified=true`);
     }
   } catch (error) {
     console.error("Email verification route error:", error);
-    return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}?emailVerified=false&error=verification_failed`);
+    return res.redirect(`${process.env.FRONTEND_URL}?emailVerified=false&error=verification_failed`);
   }
 });
 

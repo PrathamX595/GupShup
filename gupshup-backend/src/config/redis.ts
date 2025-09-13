@@ -9,8 +9,12 @@ interface IRoom {
 }
 
 const redis = createClient();
-const availableRoomKey = process.env.REDIS_ROOM_SET || "private";
+const availableRoomKey = process.env.REDIS_ROOM_SET;
 const hashprefix = "room:";
+
+if(!availableRoomKey){
+  throw new Error("REDIS_ROOM_SET environment variable is required but not defined");
+}
 
 redis.on("error", (err) => {
   console.error("Redis Client Error", err);
