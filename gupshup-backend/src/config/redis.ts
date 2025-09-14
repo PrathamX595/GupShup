@@ -8,7 +8,7 @@ interface IRoom {
   user2?: string;
 }
 
-const redis = createClient();
+const redis = createClient({url: process.env.REDIS_URL});
 const availableRoomKey = process.env.REDIS_ROOM_SET;
 const hashprefix = "room:";
 
