@@ -1002,7 +1002,11 @@ export default function Chat() {
       <div className="lg:hidden flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_2px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_2px)] bg-[size:6rem_6rem] font-[family-name:var(--font-kiwi-regular)] p-8 text-center">
         <div className="bg-[#FDC62E] w-full h-6 absolute top-0 left-0"></div>
         <div className="bg-white p-8 rounded-2xl border-4 border-black shadow-lg max-w-md">
-          <img src="/gupshupBoxed.svg" alt="GupShup Logo" className="w-20 h-20 mx-auto mb-6" />
+          <img
+            src="/gupshupBoxed.svg"
+            alt="GupShup Logo"
+            className="w-20 h-20 mx-auto mb-6"
+          />
           <h1 className="text-2xl text-black font-[family-name:var(--font-kiwi-medium)] mb-4">
             Oops!
           </h1>
@@ -1010,8 +1014,8 @@ export default function Chat() {
             Yeah, I have a life. I didn't make this responsive :P!
           </p>
           <p className="text-base text-black mb-6">
-            Please switch to a laptop or desktop to experience the full GupShup magic. 
-            Your tiny screen deserves better than my lazy CSS skills!
+            Please switch to a laptop or desktop to experience the full GupShup
+            magic. Your tiny screen deserves better than my lazy CSS skills!
           </p>
           <Link href="/">
             <button className="bg-[#FDC62E] hover:bg-[#f5bb1f] text-black px-6 py-3 rounded-lg border-2 border-black font-medium transition-colors">
@@ -1029,7 +1033,11 @@ export default function Chat() {
               <div className="flex flex-col h-full px-5 border-r justify-between items-center gap-2">
                 <div className="flex flex-col">
                   <Link href="/">
-                    <img src="/fullLogo.svg" alt="logo" className="w-fit h-15" />
+                    <img
+                      src="/fullLogo.svg"
+                      alt="logo"
+                      className="w-fit h-15"
+                    />
                   </Link>
                   <div className="flex gap-1 items-center">
                     <div className="text-xl">Chatroom</div>
@@ -1179,7 +1187,7 @@ export default function Chat() {
                   ) : (
                     <div className="w-full h-full flex flex-col justify-center items-center">
                       {user?.avatar ? (
-                        <Image
+                        <img
                           src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
                           alt="Profile"
                           width={70}
@@ -1188,7 +1196,7 @@ export default function Chat() {
                         />
                       ) : (
                         <div className="w-full h-full bg-[#FDC62E] flex items-center justify-center">
-                          <Image
+                          <img
                             src={"/gupshupLogo.svg"}
                             alt="Profile"
                             width={70}
@@ -1246,7 +1254,7 @@ export default function Chat() {
                       {!isPeerVideoOn && (
                         <div className="absolute inset-0 flex items-center justify-center bg-[#FDC62E] text-black rounded-md">
                           <div className="text-center">
-                            <Image
+                            <img
                               src={"/gupshupLogo.svg"}
                               alt="Profile"
                               width={70}
@@ -1286,7 +1294,7 @@ export default function Chat() {
                   {user ? (
                     <div className="w-10 h-10 rounded-full overflow-hidden">
                       {user.avatar ? (
-                        <Image
+                        <img
                           src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
                           alt="Profile"
                           width={40}
