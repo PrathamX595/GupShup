@@ -1,0 +1,41 @@
+services:
+  front:
+    build:
+      context: ./gupshup
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: ./gupshup/.env
+        required: true
+    depends_on:
+      - back
+  back:
+    build:
+      context: ./gupshup-backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:
+      - path: ./gupshup-backend/.env
+        required: true
+    depends_on:
+      - mongo
+      - redis
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+  mongo:
+    image: "mongo:latest"
+    ports:
+      - "27017:27017"
+    volumes:
+      - db-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: GP_Users
+
+volumes:
+  db-data:
