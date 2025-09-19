@@ -7,6 +7,7 @@ import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 
 const frontendurl = process.env.FRONTEND_URL;
+const backendurl = process.env.BASE_URL;
 
 const generateAccessAndRefreshToken = async (userId: string) => {
   try {
@@ -450,7 +451,7 @@ const sendVerificationMail = async (accessToken: String, sender: String) => {
                                         <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
                                             <tr>
                                                 <td>
-                                                    <a href="http://localhost:5000/api/auth/verifyEmail/${accessToken}"
+                                                    <a href="${backendurl}/api/auth/verifyEmail/${accessToken}"
                                                        style="display:inline-block; background:#FDC62E; color:#000000; text-decoration:none;
                                                               padding:15px 40px; font-weight:bold; font-size:18px; font-family: Arial, sans-serif;
                                                               border:none; cursor:pointer;">
@@ -889,7 +890,7 @@ const resetPassLink = async (req: Request, res: Response) => {
       expiresIn: "1h",
     });
 
-    const url = `http://localhost:3000/resetPass?id=${user._id}&token=${token}`;
+    const url = `${frontendurl}/resetPass?id=${user._id}&token=${token}`;
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       host: "smtp.gmail.com",

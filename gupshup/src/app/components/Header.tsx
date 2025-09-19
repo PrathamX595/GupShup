@@ -28,7 +28,7 @@ export function Header() {
   const ProfileTrigger = () => (
     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden hover:ring-2 hover:ring-gray-300 transition-all">
       {user?.avatar ? (
-        <Image
+        <img
           src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
           alt="Profile"
           width={40}

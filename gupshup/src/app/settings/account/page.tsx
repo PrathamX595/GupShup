@@ -215,7 +215,7 @@ function AccountPage() {
               {user ? (
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden relative group">
                   {user.avatar ? (
-                    <Image
+                    <img
                       src={getAvatarUrl(user.avatar) || "/gupshupLogo.svg"}
                       alt="Profile"
                       width={80}
