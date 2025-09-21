@@ -1,6 +1,5 @@
 <div align="center">
-  <img src="./gupshup/public/gupshupBoxed.svg" alt="GupShup Logo" width="150" />
-  <h1 align="center">GupShup</h1>
+  <img width="851" height="287" alt="Group 238551" src="https://github.com/user-attachments/assets/8b4b4363-9b75-44a5-b0c7-9eff6ba5ec3b" />
   <p align="center">
     Talk to the world, one stranger at a time.
     <br />
