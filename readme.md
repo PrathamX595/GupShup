@@ -10,6 +10,13 @@
     ·
     <a href="https://github.com/PrathamX595/GupShup/issues">Request Feature</a>
   </p>
+  <a href="https://peerlist.io/prtm_sth/project/gupshup" target="_blank" rel="noreferrer">
+	  <img
+		  src="https://peerlist.io/api/v1/projects/embed/PRJHA9ERLD798NN9K2A8NKD96GDJDB?showUpvote=true&theme=dark"
+			alt="GupShup"
+			style="width: auto; height: 72px;"
+		/>
+	</a>
 </div>
 
 ---
