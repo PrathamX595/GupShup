@@ -52,7 +52,7 @@ This project is a monorepo containing the frontend and backend services.
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Frontend** | [Next.js](https://nextjs.org/), [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/), [Tailwind CSS](https://tailwindcss.com/), [Socket.IO Client](https://socket.io/), [WebRTC](https://webrtc.org/)                                                          |
 | **Backend**  | [Node.js](https://nodejs.org/), [Express](https://expressjs.com/), [TypeScript](https://www.typescriptlang.org/), [MongoDB](https://www.mongodb.com/), [Redis](https://redis.io/), [Socket.IO](https://socket.io/), [JWT](https://jwt.io/), [Passport.js](https://www.passportjs.org/) |
-| **DevOps**   | [Docker](https://www.docker.com/)                                                                                                                                                                                                                                                      |
+| **DevOps**   | [Docker](https://www.docker.com/), [AWS](https://aws.amazon.com/)                                                                                                                                                                                                                                                  |
 
 ---
 
